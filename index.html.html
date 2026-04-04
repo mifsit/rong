@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- PWA 配置 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/xd70gqV7/134.jpg">
+    <title>留白</title>
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/localforage@1.10.0/dist/localforage.min.js"></script>
+    <script src="https://unpkg.com/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bg: 'var(--color-bg)', text: 'var(--color-text)',
+                        gray: 'var(--color-gray)', border: 'var(--color-border)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --color-bg: #F8F9FA; --color-text: #222222;
+            --color-gray: #888888; --color-border: #E5E5E5;
+            --font-family: 'Noto Serif SC', serif;
+        }
+        .dark {
+            --color-bg: #111111; --color-text: #E5E5E5;
+            --color-gray: #666666; --color-border: #2A2A2A;
+        }
+
+        body {
+            background-color: #E5E5E5; color: var(--color-text);
+            margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased;
+            font-family: var(--font-family); transition: background-color 0.5s;
+        }
+        .dark body { background-color: #050505; }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        .app-container {
+            width: 100vw; height: 100vh; position: relative;
+            background-color: var(--color-bg); background-size: cover; background-position: center;
+            display: flex; flex-direction: column; overflow: hidden;
+            transition: all 0.5s ease; border-radius: 0;
+        }
+        @media (min-width: 768px) {
+            .app-container { width: 414px; height: 896px; box-shadow: 0 40px 80px -20px rgba(0,0,0,0.15); border: 1px solid var(--color-border); }
+        }
+
+        /* 气泡样式：回归极简带有小尾巴的高级感，移除刻意背景融入 */
+        .message {
+            position: relative !important; line-height: 1.6 !important; word-break: break-word !important; 
+            width: fit-content !important; max-width: 260px !important; border-radius: 4px; padding: 10px 14px;
+        }
+        .message.message-sent { background-color: #F0F0F0; color: #111; box-shadow: none; border: none; }
+        .message.message-received { background-color: #FFFFFF; color: #111; border: 1px solid var(--color-border); box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        
+        .dark .message.message-sent { background-color: #2A2A2A; color: #E5E5E5; }
+        .dark .message.message-received { background-color: #111111; color: #E5E5E5; border: 1px solid #333333; }
+
+        .message::after { content: ""; position: absolute; width: 8px; height: 8px; top: 18px; transform: translateY(-50%) rotate(45deg); }
+        .message.message-sent::after { right: -4px; background-color: #F0F0F0; }
+        .message.message-received::after { left: -4px; background-color: #FFFFFF; border-left: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
+        
+        .dark .message.message-sent::after { background-color: #2A2A2A; }
+        .dark .message.message-received::after { background-color: #111111; border-color: #333333; }
+
+        .highlight { background-color: rgba(150, 150, 150, 0.3); border-radius: 2px; }
+
+        /* 动画与交互 */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); position: absolute; width: 100%; height: 100%; }
+        .fade-enter-from { opacity: 0; transform: scale(0.98); }
+        .fade-leave-to { opacity: 0; transform: scale(1.02); }
+
+        .msg-list-enter-active, .msg-list-leave-active { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .msg-list-enter-from { opacity: 0; transform: translateY(10px); }
+        .msg-list-leave-to { opacity: 0; transform: translateY(-10px); }
+        
+        .intro-overlay { position: fixed; inset: 0; z-index: 999; background: var(--color-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 2s ease; }
+        .intro-text { font-size: 24px; font-weight: 300; letter-spacing: 0.8em; text-indent: 0.8em; animation: breath 3s infinite alternate; }
+        .intro-sub { font-size: 11px; margin-top: 30px; letter-spacing: 0.5em; text-indent: 0.5em; color: var(--color-gray); opacity: 0; animation: fadeIn 2s forwards 1s; }
+        @keyframes breath { 0% { opacity: 0.3; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        /* 首页竖排菜单 */
+        .home-menu { display: flex; flex-direction: row; justify-content: center; gap: 40px; height: 60%; align-items: center; }
+        .home-menu-item { writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: 0.6em; cursor: pointer; transition: all 0.4s; font-size: 16px; padding: 10px; opacity: 0.7; }
+        .home-menu-item:hover { opacity: 1; transform: translateY(-5px); }
+        .home-menu-item.active { opacity: 1; border-left: 1px solid var(--color-text); padding-left: 15px; }
+
+        input, textarea, button { outline: none; background: transparent; font-family: inherit; }
+        .mag-checkbox { appearance: none; width: 16px; height: 16px; border: 1px solid var(--color-gray); border-radius: 2px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+        .mag-checkbox:checked { background: var(--color-text); border-color: var(--color-text); }
+        .mag-checkbox:checked::after { content: ''; width: 4px; height: 8px; border: solid var(--color-bg); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg) translateY(-1px); }
+        
+        .typing-indicator { animation: typingBreathe 1.5s infinite alternate; }
+        @keyframes typingBreathe { 0% { opacity: 0.2; } 100% { opacity: 0.8; } }
+    </style>
+    <style id="custom-font-injection"></style>
+</head>
+<body class="flex justify-center items-center h-screen w-screen transition-colors duration-500">
+
+<div id="app" v-cloak :class="{'dark': settings.darkMode}" :style="customStyleVars">
+    
+    <!-- 开场动画 -->
+    <div v-if="appState.showIntro" class="intro-overlay text-text" :style="{ opacity: appState.introFading ? 0 : 1 }">
+        <div class="intro-text">白纸无字</div>
+        <div class="intro-sub">静候落笔</div>
+    </div>
+
+    <!-- 全局弹窗 -->
+    <transition name="fade">
+        <div v-if="modal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 backdrop-blur-sm px-6">
+            <div class="bg-bg border border-border p-6 w-full max-w-sm shadow-2xl relative">
+                <h3 class="text-[13px] tracking-widest mb-4 font-bold border-b border-border pb-2">{{ modal.title }}</h3>
+                <p v-if="modal.message" class="text-[11px] text-gray mb-6 leading-relaxed whitespace-pre-line">{{ modal.message }}</p>
+                <input v-if="modal.type === 'prompt'" v-model="modal.input" class="w-full border-b border-text py-2 text-[13px] mb-6 transition-colors" :placeholder="modal.placeholder">
+                <textarea v-if="modal.type === 'batchAdd'" v-model="modal.input" rows="6" placeholder="每行一语..." class="w-full border border-border p-3 text-[12px] focus:border-text transition-colors mb-6 resize-none leading-relaxed"></textarea>
+                
+                <div v-if="modal.type === 'profile'" class="mb-6 space-y-4 text-[12px]">
+                    <div><span class="text-gray block mb-1">名讳</span><input v-model="modal.profileData.name" class="w-full border-b border-border py-1 focus:border-text"></div>
+                    <div>
+                        <span class="text-gray block mb-1">容颜</span>
+                        <input type="file" accept="image/*" @change="e => handleImgUpload(e, 'avatar')" class="text-[10px] text-gray mb-2">
+                        <button @click="modal.profileData.avatar=''" class="text-[10px] text-gray border border-border px-2 py-1">拂去容颜</button>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-5 text-[11px] tracking-widest mt-2">
+                    <button @click="closeModal" class="text-gray hover:text-text">拂袖</button>
+                    <button @click="confirmModal" class="text-bg bg-text px-4 py-2 hover:opacity-80 transition-opacity">落印</button>
+                </div>
+            </div>
+        </div>
+    </transition>
+
+    <div class="app-container text-[14px]" :style="{ backgroundImage: settings.chatBgImg ? `url(${settings.chatBgImg})` : 'none' }">
+        
+        <!-- ================= 雅致首页 ================= -->
+        <transition name="fade">
+            <div v-show="currentView === 'home'" class="absolute inset-0 flex flex-col z-10 p-8" :class="settings.chatBgImg ? 'bg-bg/80 backdrop-blur-md' : 'bg-bg'">
+                <div class="mt-12 mb-auto flex flex-col items-center">
+                    <h1 class="text-4xl tracking-[0.3em] text-text mb-2 font-semibold" style="text-indent: 0.3em;">留白</h1>
+                    <div v-if="unreadCount > 0" class="mt-4 flex items-center gap-2">
+                        <div class="w-1.5 h-1.5 bg-text rounded-full"></div>
+                        <span class="text-[10px] text-text tracking-widest">{{ unreadCount }} 封未读</span>
+                    </div>
+                </div>
+
+                <div class="home-menu">
+                    <div class="home-menu-item" @click="switchView('chat')">飞鸽传书</div>
+                    <div class="home-menu-item" @click="switchView('library')">藏经卷宗</div>
+                    <div class="home-menu-item" @click="switchView('aesthetic')">岁时风物</div>
+                    <div class="home-menu-item" @click="switchView('insight')">洞察秋毫</div>
+                    <div class="home-menu-item" @click="switchView('settings')">万象法则</div>
+                </div>
+                
+                <div class="mt-auto text-center text-[10px] text-gray tracking-[0.5em] border-t border-border pt-6 pb-4">
+                    静水流深
+                </div>
+            </div>
+        </transition>
+        
+        <!-- ================= 飞鸽传书 (交谈) ================= -->
+        <transition name="fade">
+            <div v-show="currentView === 'chat'" class="absolute inset-0 flex flex-col z-20">
+                <!-- 顶部栏：全透明无边框 -->
+                <header class="h-16 flex items-center justify-between px-4 shrink-0 bg-transparent relative z-10 pt-2">
+                    <div class="flex items-center gap-4">
+                        <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity p-2"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.2]"></i></button>
+                        <div class="flex flex-col cursor-pointer" @click="editProfile('them')">
+                            <span class="text-[15px] font-medium tracking-widest">{{ profiles.them.name }}</span>
+                            <span v-if="isTyping" class="text-[10px] text-gray tracking-widest absolute top-12 typing-indicator">落笔中...</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button v-if="!captureMode" @click="toggleSearch" class="text-text hover:opacity-50 transition-opacity p-2"><i data-lucide="search" class="w-4 h-4 stroke-[1.5]"></i></button>
+                        <button v-if="!captureMode" @click="captureMode = true; selectedCaptureMsgs=[]" class="text-text hover:opacity-50 transition-opacity p-2"><i data-lucide="scan" class="w-4 h-4 stroke-[1.5]"></i></button>
+                        <button v-if="captureMode" @click="captureMode = false" class="text-[11px] text-gray hover:text-text tracking-widest p-2">收归</button>
+                    </div>
+                </header>
+
+                <!-- 搜索栏 -->
+                <div v-if="chatState.isSearching" class="bg-bg/90 backdrop-blur-sm px-6 py-3 flex items-center gap-4 text-xs shrink-0 z-10 shadow-sm">
+                    <input v-model="chatState.keyword" type="text" placeholder="寻章摘句..." class="flex-1 bg-transparent border-b border-border focus:border-text py-1 transition-colors" @input="executeSearch">
+                    <span v-if="chatState.results.length > 0" class="text-gray text-[10px]">{{ chatState.currentIdx + 1 }}/{{ chatState.results.length }}</span>
+                    <button @click="jumpSearch(-1)" class="text-text" :disabled="chatState.results.length===0"><i data-lucide="chevron-up" class="w-4 h-4 stroke-[1.5]"></i></button>
+                    <button @click="jumpSearch(1)" class="text-text" :disabled="chatState.results.length===0"><i data-lucide="chevron-down" class="w-4 h-4 stroke-[1.5]"></i></button>
+                </div>
+
+                <!-- 消息流 -->
+                <main id="chat-container" class="flex-1 overflow-y-auto px-4 py-4 scroll-smooth" @click="chatState.isSearching = false">
+                    <div class="pb-6">
+                        <transition-group name="msg-list">
+                            <div v-for="msg in messages" :key="msg.id" :id="'msg-'+msg.id" class="mb-6 relative group flex gap-3" :class="msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'">
+                                
+                                <div v-if="captureMode" class="mt-2 shrink-0">
+                                    <input type="checkbox" :value="msg" v-model="selectedCaptureMsgs" class="mag-checkbox">
+                                </div>
+
+                                <div v-if="settings.showAvatar" class="shrink-0 w-10 h-10 cursor-pointer mt-0.5" @click="editProfile(msg.sender)">
+                                    <div class="w-full h-full bg-bg border border-border flex items-center justify-center overflow-hidden shadow-sm" :style="{ borderRadius: settings.avatarRadius + '%' }">
+                                        <img v-if="profiles[msg.sender].avatar" :src="profiles[msg.sender].avatar" class="w-full h-full object-cover">
+                                        <span v-else class="text-[13px] text-gray">{{ profiles[msg.sender].name.charAt(0) }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col relative max-w-[calc(100%-60px)]" :class="msg.sender === 'me' ? 'items-end' : 'items-start'">
+                                    <span v-if="settings.showName" class="text-[10px] text-gray mb-1.5 tracking-widest px-1 opacity-70">{{ profiles[msg.sender].name }}</span>
+                                    
+                                    <button @click="deleteMsg(msg.id)" class="absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity text-gray hover:text-text p-1 z-10" :class="msg.sender === 'me' ? '-left-8' : '-right-8'">
+                                        <i data-lucide="x" class="w-3.5 h-3.5 stroke-[1.5]"></i>
+                                    </button>
+
+                                    <div class="message" 
+                                         :class="[msg.sender === 'me' ? 'message-sent' : 'message-received']" 
+                                         :style="{ fontSize: settings.fontSize + 'px' }" 
+                                         v-html="highlightText(msg.content)">
+                                    </div>
+                                </div>
+                            </div>
+                        </transition-group>
+                    </div>
+                </main>
+
+                <!-- 输入区：全透明无边框 -->
+                <footer class="shrink-0 bg-transparent pb-4 relative z-10">
+                    <div v-if="captureMode" class="h-16 flex items-center justify-between px-6 bg-bg/90 backdrop-blur-sm">
+                        <div class="flex items-center gap-4">
+                            <button @click="selectAllCapture" class="text-[11px] tracking-widest text-text border-b border-text">全揽</button>
+                            <span class="text-[11px] tracking-widest text-gray">选定 {{ selectedCaptureMsgs.length }} 帧</span>
+                        </div>
+                        <button @click="generateScreenshot" class="px-5 py-2 border border-text text-text hover:bg-text hover:text-bg transition-colors text-[11px] tracking-widest" :disabled="selectedCaptureMsgs.length===0">拓印</button>
+                    </div>
+                    <div v-else class="flex items-end px-4 py-2 gap-3 mx-2 bg-bg/80 backdrop-blur-md rounded-md shadow-sm border border-border/50">
+                        <button @click="forceReply" :disabled="isTyping" class="p-2 text-gray hover:text-text shrink-0 disabled:opacity-30 transition-colors pb-2" title="索信">
+                            <i data-lucide="feather" class="w-5 h-5 stroke-[1.2]"></i>
+                        </button>
+                        <textarea v-model="inputText" @keydown.enter.prevent="handleSend" @input="saveDraft" rows="1" 
+                                  class="flex-1 py-2.5 text-[14px] resize-none max-h-32 tracking-wide placeholder:text-gray/60 leading-relaxed border-none focus:ring-0 transition-colors bg-transparent"
+                                  placeholder="落墨..."></textarea>
+                        <button @click="handleSend" class="p-2 text-text hover:opacity-50 transition-opacity shrink-0 pb-2" title="发函">
+                            <i data-lucide="send" class="w-5 h-5 stroke-[1.2]"></i>
+                        </button>
+                    </div>
+                </footer>
+            </div>
+        </transition>
+
+        <!-- ================= 岁时风物 (外观与纪念日) ================= -->
+        <transition name="fade">
+            <div v-show="currentView === 'aesthetic'" class="absolute inset-0 flex flex-col z-20 bg-bg">
+                <header class="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
+                    <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity p-2"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.2]"></i></button>
+                    <span class="text-[14px] tracking-widest font-medium">岁时风物</span>
+                    <div class="w-10"></div>
+                </header>
+                <main class="flex-1 overflow-y-auto p-6 space-y-12 pb-20">
+                    
+                    <!-- 背景卷轴 -->
+                    <section>
+                        <h3 class="text-[12px] text-gray tracking-[0.2em] border-b border-border pb-2 mb-4">画壁 (背景)</h3>
+                        <div class="grid grid-cols-3 gap-3 mb-4">
+                            <div v-for="(bg, idx) in presetBgs" :key="idx" @click="settings.chatBgImg = bg.url" 
+                                 class="aspect-[9/16] rounded border cursor-pointer relative overflow-hidden transition-all"
+                                 :class="settings.chatBgImg === bg.url ? 'border-text ring-1 ring-text' : 'border-border hover:border-gray'">
+                                <div v-if="bg.url" class="absolute inset-0 bg-cover bg-center" :style="{backgroundImage: `url(${bg.url})`}"></div>
+                                <div v-else class="absolute inset-0 bg-bg flex items-center justify-center text-[10px] text-gray tracking-widest">无尘</div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="tracking-widest block mb-2 text-[11px]">自定义画卷</span>
+                            <input type="file" accept="image/*" @change="e => handleImgUpload(e, 'bg')" class="text-[10px] text-gray w-full">
+                        </div>
+                    </section>
+
+                    <!-- 字形 -->
+                    <section>
+                        <h3 class="text-[12px] text-gray tracking-[0.2em] border-b border-border pb-2 mb-4">字形 (字体)</h3>
+                        <div class="space-y-4 text-[12px]">
+                            <div>
+                                <span class="tracking-widest block mb-2">引入外部字形 (URL)</span>
+                                <input v-model="settings.customFontUrl" placeholder="如谷歌字体CSS链接" class="w-full border-b border-border py-1 focus:border-text">
+                            </div>
+                            <div>
+                                <span class="tracking-widest block mb-2">指定族讳 (Font Family)</span>
+                                <input v-model="settings.customFontName" placeholder="如 'Noto Serif SC'" class="w-full border-b border-border py-1 focus:border-text">
+                            </div>
+                            <p class="text-[10px] text-gray leading-relaxed">提示：若留空，则顺应天意，使用默认宋体。</p>
+                        </div>
+                    </section>
+
+                    <!-- 岁时铭记 -->
+                    <section>
+                        <div class="flex justify-between items-end border-b border-border pb-2 mb-4">
+                            <h3 class="text-[12px] text-gray tracking-[0.2em]">岁时铭记 (纪念日)</h3>
+                            <button @click="addAnniversary" class="text-[11px] tracking-widest hover:text-gray">+ 添一笔</button>
+                        </div>
+                        <div class="space-y-3">
+                            <div v-for="anni in anniversaries" :key="anni.id" class="flex gap-3 items-center bg-bg border border-border p-3">
+                                <input v-model="anni.date" placeholder="月-日 (如 01-01)" class="w-20 text-[11px] bg-transparent border-b border-border text-center">
+                                <input v-model="anni.name" placeholder="何事" class="flex-1 text-[12px] bg-transparent border-b border-border">
+                                <button @click="removeAnniversary(anni.id)" class="text-gray hover:text-text"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                            <div v-if="anniversaries.length === 0" class="text-[10px] text-gray text-center py-4 tracking-widest">暂无牵挂之日</div>
+                        </div>
+                    </section>
+                </main>
+            </div>
+        </transition>
+
+        <!-- ================= 洞察秋毫 (月度总结风格) ================= -->
+        <transition name="fade">
+            <div v-show="currentView === 'insight'" class="absolute inset-0 flex flex-col z-20 bg-bg">
+                <header class="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
+                    <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity p-2"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.2]"></i></button>
+                    <span class="text-[14px] tracking-widest font-medium">洞察秋毫</span>
+                    <div class="w-10"></div>
+                </header>
+                <main class="flex-1 overflow-y-auto p-8 flex flex-col gap-12 bg-bg text-center">
+                    
+                    <div class="mt-4">
+                        <div class="text-[12px] tracking-[0.3em] text-gray mb-2">本月纪实</div>
+                        <div class="text-5xl font-light mb-4">{{ statData.monthCount }}</div>
+                        <div class="text-[10px] tracking-widest text-gray">次落墨交心</div>
+                    </div>
+
+                    <div class="border-t border-border pt-10">
+                        <div class="text-[12px] tracking-[0.3em] text-gray mb-8">光阴流转</div>
+                        <div class="grid grid-cols-2 gap-8 text-left max-w-[240px] mx-auto">
+                            <div>
+                                <div class="text-[10px] text-gray tracking-widest mb-1">立卷总计</div>
+                                <div class="text-2xl">{{ messages.length }}</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-gray tracking-widest mb-1">最频时辰</div>
+                                <div class="text-2xl">{{ statData.peakHour }} <span class="text-[12px]">时</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-border pt-10">
+                        <div class="text-[12px] tracking-[0.3em] text-gray mb-8">言辞拾遗</div>
+                        <div class="flex flex-col gap-6 max-w-[240px] mx-auto text-left">
+                            <div v-if="statData.topWordMe" class="bg-border/30 p-4 rounded-sm">
+                                <span class="text-[10px] text-gray block mb-2 tracking-widest">吾常言</span>
+                                <span class="text-[14px] tracking-wide">"{{ statData.topWordMe }}"</span>
+                            </div>
+                            <div v-if="statData.topWordThem" class="bg-border/30 p-4 rounded-sm">
+                                <span class="text-[10px] text-gray block mb-2 tracking-widest">客常言</span>
+                                <span class="text-[14px] tracking-wide">"{{ statData.topWordThem }}"</span>
+                            </div>
+                            <div v-if="!statData.topWordMe && !statData.topWordThem" class="text-[11px] text-gray text-center">尚无足量言语</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-auto pt-10 pb-4">
+                        <div class="text-[9px] text-gray tracking-[0.3em]">自 {{ statData.firstTime }} 起结缘</div>
+                    </div>
+                </main>
+            </div>
+        </transition>
+
+        <!-- ================= 藏经卷宗 ================= -->
+        <transition name="fade">
+            <div v-show="currentView === 'library'" class="absolute inset-0 flex flex-col z-20 bg-bg">
+                <header class="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
+                    <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity p-2"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.2]"></i></button>
+                    <span class="text-[14px] tracking-widest font-medium">藏经卷宗</span>
+                    <div class="flex gap-4">
+                        <button @click="deduplicateReplies" class="text-text hover:text-gray text-[11px] tracking-widest">涤尘</button>
+                        <button @click="batchSelectMode = !batchSelectMode" class="text-text hover:text-gray text-[11px] tracking-widest">{{ batchSelectMode ? '完成' : '点选' }}</button>
+                    </div>
+                </header>
+
+                <div class="flex flex-1 overflow-hidden">
+                    <div class="w-24 border-r border-border overflow-y-auto flex flex-col pb-10 relative shrink-0">
+                        <div v-for="g in replyGroups" :key="g.id" 
+                             class="py-5 px-2 text-[12px] tracking-widest text-center border-b border-border cursor-pointer transition-colors relative"
+                             :class="currentGroupId === g.id ? 'bg-text text-bg' : 'text-gray hover:bg-border/30'" 
+                             @click="currentGroupId = g.id">
+                            {{ g.name }}
+                            <button v-if="currentGroupId === g.id && replyGroups.length>1" @click.stop="deleteGroup(g.id)" class="absolute right-1 top-5 text-bg/50 hover:text-bg"><i data-lucide="x" class="w-3 h-3"></i></button>
+                        </div>
+                        <button @click="addGroup" class="py-5 text-[10px] text-gray tracking-widest hover:text-text">+ 辟新卷</button>
+                    </div>
+
+                    <div class="flex-1 flex flex-col overflow-hidden bg-bg relative">
+                        <div v-if="currentGroup" class="shrink-0 p-4 pb-2 border-b border-border flex justify-between items-end gap-2">
+                            <input v-model="currentGroup.name" @blur="debouncedSave" class="text-[15px] font-medium tracking-widest bg-transparent border-none flex-1">
+                            <input v-model="libSearch" placeholder="寻章..." class="w-20 text-[11px] bg-transparent border-b border-border focus:border-text py-1 text-right">
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto p-4 pb-20 reply-sortable-list space-y-3">
+                            <div v-if="currentGroup && filteredReplies.length === 0" class="text-[11px] text-gray text-center mt-10 tracking-widest">此卷尚空</div>
+                            
+                            <div v-for="reply in filteredReplies" :key="reply.id" :data-id="reply.id" class="flex items-start gap-3 p-3 border border-border bg-bg group transition-colors" :class="{'opacity-40': !reply.enabled}">
+                                <div v-if="batchSelectMode" class="mt-0.5 shrink-0">
+                                    <input type="checkbox" :value="reply.id" v-model="selectedLibIds" class="mag-checkbox">
+                                </div>
+                                <i v-else data-lucide="grip-vertical" class="w-4 h-4 text-border mt-0.5 cursor-grab active:cursor-grabbing drag-handle hover:text-gray transition-colors shrink-0"></i>
+                                
+                                <textarea v-model="reply.text" @blur="debouncedSave" rows="1" class="flex-1 text-[13px] bg-transparent resize-none leading-relaxed min-h-[24px]" :class="{'line-through': !reply.enabled}"></textarea>
+                                
+                                <button @click="reply.enabled = !reply.enabled; debouncedSave()" class="text-[10px] text-gray hover:text-text border border-border px-2 py-1 shrink-0">{{ reply.enabled ? '启' : '禁' }}</button>
+                            </div>
+                        </div>
+
+                        <div class="shrink-0 p-4 border-t border-border bg-bg flex gap-3">
+                            <button v-if="batchSelectMode" @click="deleteSelectedLib" class="flex-1 py-3 bg-text text-bg text-[11px] tracking-widest hover:opacity-80">焚毁选中</button>
+                            <template v-else>
+                                <button @click="addReplyToCurrent" class="flex-1 py-3 border border-border text-[11px] tracking-widest hover:text-bg hover:bg-text transition-colors">添一笔</button>
+                                <button @click="batchAddReplies" class="flex-1 py-3 border border-dashed border-border text-[11px] tracking-widest hover:border-text transition-colors">批量泼墨</button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- ================= 万象法则(设置) ================= -->
+        <transition name="fade">
+            <div v-show="currentView === 'settings'" class="absolute inset-0 flex flex-col z-20 bg-bg">
+                <header class="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
+                    <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity p-2"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.2]"></i></button>
+                    <span class="text-[14px] tracking-widest font-medium">万象法则</span>
+                    <div class="w-10"></div>
+                </header>
+
+                <main class="flex-1 overflow-y-auto p-6 space-y-10 pb-20">
+                    
+                    <section>
+                        <h3 class="text-[12px] text-gray tracking-[0.2em] border-b border-border pb-2 mb-4">卷面</h3>
+                        <div class="space-y-6 text-[13px]">
+                            <div class="flex justify-between items-center">
+                                <span class="tracking-widest">顺应天时</span>
+                                <input type="checkbox" v-model="settings.autoDarkMode" class="mag-checkbox">
+                            </div>
+                            <div class="flex justify-between items-center" :class="{'opacity-40': settings.autoDarkMode}">
+                                <span class="tracking-widest">长夜模式</span>
+                                <input type="checkbox" v-model="settings.darkMode" :disabled="settings.autoDarkMode" class="mag-checkbox">
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="tracking-widest">展露真容</span>
+                                <input type="checkbox" v-model="settings.showAvatar" class="mag-checkbox">
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="tracking-widest">铭记名讳</span>
+                                <input type="checkbox" v-model="settings.showName" class="mag-checkbox">
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-3"><span class="tracking-widest">墨迹粗细</span><span class="text-[11px] text-gray">{{settings.fontSize}}</span></div>
+                                <input type="range" v-model.number="settings.fontSize" min="12" max="22" class="w-full accent-text h-1 bg-border rounded-none appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-text">
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="text-[12px] text-gray tracking-[0.2em] border-b border-border pb-2 mb-4">交互</h3>
+                        <div class="space-y-6 text-[13px]">
+                            <div class="flex justify-between items-center">
+                                <span class="tracking-widest">敲击回声</span>
+                                <input type="checkbox" v-model="settings.soundEnabled" class="mag-checkbox">
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="tracking-widest">飞鸽惊铃</span>
+                                <input type="checkbox" v-model="settings.notification" @change="reqNotification" class="mag-checkbox">
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="tracking-widest block">客方斟酌迟疑 (落笔延时)</span>
+                                <select v-model="settings.replyDelay" class="bg-transparent border-b border-text pb-1 text-[12px] text-right focus:outline-none">
+                                    <option value="fast">瞬息 (1-2秒)</option>
+                                    <option value="normal">思忖 (3-5秒)</option>
+                                    <option value="slow">斟酌 (5-10秒)</option>
+                                </select>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="tracking-widest block">客方主动问候频次</span>
+                                <select v-model.number="settings.autoReplyInterval" class="bg-transparent border-b border-text pb-1 text-[12px] text-right focus:outline-none">
+                                    <option value="0">从不</option>
+                                    <option value="1">片刻 (1分)</option>
+                                    <option value="5">茶歇 (5分)</option>
+                                    <option value="30">半个时辰 (30分)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="text-[12px] text-gray tracking-[0.2em] border-b border-border pb-2 mb-4">典藏</h3>
+                        <div class="space-y-4">
+                            <button @click="exportAllData" class="w-full py-3 border border-border text-text hover:bg-border transition-colors tracking-widest text-[12px]">
+                                拓印全卷
+                            </button>
+                            <label class="w-full py-3 border border-border text-text hover:bg-border transition-colors tracking-widest text-[12px] flex justify-center cursor-pointer">
+                                纳藏旧卷
+                                <input type="file" accept=".json" class="hidden" @change="importAllData">
+                            </label>
+                            <button @click="clearData" class="w-full py-3 border border-text bg-text text-bg hover:opacity-80 transition-colors tracking-widest text-[12px] mt-4">
+                                付之一炬
+                            </button>
+                        </div>
+                    </section>
+                </main>
+            </div>
+        </transition>
+
+        <!-- 隐藏渲染区：长图生成用，采用标准流布局防错位 -->
+        <div id="hidden-capture-area" style="padding: 40px 20px; background: var(--color-bg); width: 414px; box-sizing: border-box; color: var(--color-text); font-family: var(--font-family);">
+            <div v-for="msg in selectedCaptureMsgs" :key="'cap-'+msg.id" style="margin-bottom: 24px; clear: both; overflow: hidden;">
+                
+                <!-- 对方消息：左浮动 -->
+                <div v-if="msg.sender === 'them'" style="float: left; width: 100%;">
+                    <div v-if="settings.showAvatar" style="float: left; width: 36px; height: 36px; border-radius: 4px; overflow: hidden; border: 1px solid var(--color-border); margin-right: 12px; background: var(--color-bg); text-align: center; line-height: 36px; font-size: 14px;">
+                        <img v-if="profiles.them.avatar" :src="profiles.them.avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                        <span v-else>{{ profiles.them.name.charAt(0) }}</span>
+                    </div>
+                    <div style="float: left; max-width: 260px;">
+                        <div v-if="settings.showName" style="font-size: 10px; color: var(--color-gray); margin-bottom: 6px; letter-spacing: 1px;">{{ profiles.them.name }}</div>
+                        <div style="padding: 10px 14px; border-radius: 4px; line-height: 1.6; word-break: break-word; background: #FFFFFF; color: #111; border: 1px solid var(--color-border);" :style="{ fontSize: settings.fontSize + 'px', background: settings.darkMode?'#111':'#FFF', color: settings.darkMode?'#EEE':'#111', borderColor: settings.darkMode?'#333':'#E5E5E5' }" v-html="msg.content"></div>
+                    </div>
+                </div>
+
+                <!-- 我方消息：右浮动 -->
+                <div v-else style="float: right; width: 100%; text-align: right;">
+                    <div v-if="settings.showAvatar" style="float: right; width: 36px; height: 36px; border-radius: 4px; overflow: hidden; border: 1px solid var(--color-border); margin-left: 12px; background: var(--color-bg); text-align: center; line-height: 36px; font-size: 14px;">
+                        <img v-if="profiles.me.avatar" :src="profiles.me.avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                        <span v-else>{{ profiles.me.name.charAt(0) }}</span>
+                    </div>
+                    <div style="float: right; max-width: 260px; text-align: left;">
+                        <div v-if="settings.showName" style="font-size: 10px; color: var(--color-gray); margin-bottom: 6px; letter-spacing: 1px; text-align: right;">{{ profiles.me.name }}</div>
+                        <div style="padding: 10px 14px; border-radius: 4px; line-height: 1.6; word-break: break-word; background: #F0F0F0; color: #111;" :style="{ fontSize: settings.fontSize + 'px', background: settings.darkMode?'#2A2A2A':'#F0F0F0', color: settings.darkMode?'#EEE':'#111' }" v-html="msg.content"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const { createApp, ref, reactive, computed, watch, nextTick, onMounted } = Vue;
+const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+
+createApp({
+    setup() {
+        const appState = reactive({ showIntro: true, introFading: false });
+        const currentView = ref('home');
+        const unreadCount = ref(0);
+        
+        const messages = ref([]);
+        const inputText = ref('');
+        const isTyping = ref(false);
+
+        const profiles = reactive({ me: { name: '吾', avatar: '' }, them: { name: '客', avatar: '' } });
+        const settings = reactive({ 
+            darkMode: false, autoDarkMode: true, chatBgImg: '',
+            showAvatar: true, showName: false, avatarRadius: 0, 
+            soundEnabled: true, notification: false, autoReplyInterval: 0, replyDelay: 'normal',
+            customFontUrl: '', customFontName: '', fontSize: 14
+        });
+
+        const presetBgs = [
+            { url: '' }, // 无
+            { url: 'https://images.unsplash.com/photo-1615563821038-f9389e771d93?q=80&w=600&auto=format&fit=crop' }, // 宣纸纹理
+            { url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=600&auto=format&fit=crop' }, // 渐变浅素
+            { url: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=600&auto=format&fit=crop' }  // 墨色山水感
+        ];
+
+        const anniversaries = ref([]);
+
+        const replyGroups = ref([{ id: genId(), name: '初篇', replies: [{ id: genId(), text: '静水流深。', enabled: true }] }]);
+        const currentGroupId = ref('');
+        const currentGroup = computed(() => replyGroups.value.find(g => g.id === currentGroupId.value));
+
+        const libSearch = ref('');
+        const batchSelectMode = ref(false);
+        const selectedLibIds = ref([]);
+        const filteredReplies = computed(() => {
+            if(!currentGroup.value) return [];
+            const k = libSearch.value.trim();
+            if(!k) return currentGroup.value.replies;
+            return currentGroup.value.replies.filter(r => r.text.includes(k));
+        });
+
+        const captureMode = ref(false);
+        const selectedCaptureMsgs = ref([]);
+        const chatState = reactive({ isSearching: false, keyword: '', results: [], currentIdx: 0 });
+
+        const modal = reactive({ show: false, type: '', title: '', message: '', input: '', placeholder: '', profileData: {}, onConfirm: null });
+
+        const STORAGE_KEY = 'liubai_v6_data';
+        let saveTimeout = null;
+        let audioCtx = null;
+        let sortableInst = null;
+        let activeReplyTimer = null;
+
+        const initData = async () => {
+            localforage.config({ name: 'LiuBaiApp', storeName: 'v6' });
+            const stored = await localforage.getItem(STORAGE_KEY);
+            if (stored) {
+                if(stored.messages) messages.value = stored.messages;
+                if(stored.profiles) Object.assign(profiles, stored.profiles);
+                if(stored.settings) Object.assign(settings, { ...settings, ...stored.settings });
+                if(stored.replyGroups) { replyGroups.value = stored.replyGroups; currentGroupId.value = replyGroups.value[0]?.id; }
+                if(stored.anniversaries) anniversaries.value = stored.anniversaries;
+            } else { currentGroupId.value = replyGroups.value[0]?.id; }
+            
+            inputText.value = localStorage.getItem('liubai_draft') || '';
+            
+            setupSystemTheme();
+            checkAnniversaries();
+            
+            setTimeout(() => { appState.introFading = true; setTimeout(() => appState.showIntro = false, 2000); }, 3000);
+        };
+
+        const debouncedSave = () => {
+            if(saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(async () => { await localforage.setItem(STORAGE_KEY, JSON.parse(JSON.stringify({ messages: messages.value, profiles, settings, replyGroups: replyGroups.value, anniversaries: anniversaries.value }))); }, 500);
+        };
+        watch([messages, profiles, settings, anniversaries], debouncedSave, { deep: true });
+        const saveDraft = () => localStorage.setItem('liubai_draft', inputText.value);
+
+        // 主题与字体
+        const setupSystemTheme = () => {
+            const mq = window.matchMedia('(prefers-color-scheme: dark)');
+            if(settings.autoDarkMode) settings.darkMode = mq.matches;
+            mq.addEventListener('change', e => { if(settings.autoDarkMode) settings.darkMode = e.matches; });
+        };
+        watch(() => settings.autoDarkMode, val => { if(val) settings.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches; });
+        watch(() => settings.darkMode, val => document.documentElement.classList.toggle('dark', val));
+
+        const customStyleVars = computed(() => {
+            let style = {};
+            if(settings.customFontName) style['--font-family'] = settings.customFontName;
+            return style;
+        });
+
+        watch(() => [settings.customFontUrl, settings.customFontName], () => {
+            const fontEl = document.getElementById('custom-font-injection');
+            if (settings.customFontUrl && fontEl) {
+                if(settings.customFontUrl.includes('css')) fontEl.innerHTML = `@import url('${settings.customFontUrl}');`;
+                else { fontEl.innerHTML = `@font-face { font-family: 'CustomFont'; src: url('${settings.customFontUrl}'); }`; if(!settings.customFontName) settings.customFontName = 'CustomFont'; }
+            }
+        });
+
+        // 弹窗
+        const showModal = (type, title, opts = {}) => {
+            modal.type = type; modal.title = title; modal.message = opts.message || '';
+            modal.input = opts.input || ''; modal.placeholder = opts.placeholder || '';
+            modal.onConfirm = opts.onConfirm; modal.show = true;
+            if(type === 'profile') modal.profileData = JSON.parse(JSON.stringify(profiles[opts.role]));
+            modal.role = opts.role;
+        };
+        const closeModal = () => modal.show = false;
+        const confirmModal = () => {
+            if(modal.onConfirm) modal.onConfirm(modal.type === 'profile' ? modal.profileData : modal.input);
+            if(modal.type === 'profile') { profiles[modal.role] = modal.profileData; }
+            closeModal();
+        };
+
+        const editProfile = (role) => showModal('profile', `重塑 (${role === 'me' ? '吾' : '客'})`, { role });
+        const handleImgUpload = (e, target) => {
+            const f = e.target.files[0]; if(!f) return; const r = new FileReader();
+            r.onload = ev => { if(target==='bg') settings.chatBgImg = ev.target.result; else modal.profileData.avatar = ev.target.result; };
+            r.readAsDataURL(f);
+        };
+
+        // 音效与通知
+        const initAudio = () => { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); };
+        const playTone = (type) => {
+            if (!settings.soundEnabled) return; initAudio();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            if (type === 'send') { osc.type = 'sine'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.05); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05); osc.start(); osc.stop(audioCtx.currentTime + 0.05); }
+            else { osc.type = 'triangle'; osc.frequency.setValueAtTime(300, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(500, audioCtx.currentTime + 0.1); gain.gain.setValueAtTime(0, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05); gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); osc.start(); osc.stop(audioCtx.currentTime + 0.1); }
+        };
+        const reqNotification = () => { if(settings.notification && Notification.permission !== 'granted') Notification.requestPermission(); };
+        const sendNotification = (msg) => { if(settings.notification && Notification.permission === 'granted' && document.visibilityState === 'hidden') { new Notification(profiles.them.name, { body: msg, icon: profiles.them.avatar }); unreadCount.value++; } };
+
+        // 交互逻辑
+        const scrollToBottom = () => nextTick(() => { const el = document.getElementById('chat-container'); if(el) el.scrollTop = el.scrollHeight; });
+        watch(currentView, (val) => {
+            if(val === 'chat') { unreadCount.value = 0; scrollToBottom(); captureMode.value = false; }
+            if(val === 'library') nextTick(initSortable);
+            nextTick(() => { if(window.lucide) lucide.createIcons(); });
+        });
+
+        const sendMessage = (sender, content) => {
+            if (!content) return;
+            messages.value.push({ id: genId(), sender, content, timestamp: Date.now() });
+            playTone(sender === 'me' ? 'send' : 'receive'); 
+            scrollToBottom();
+            if(sender === 'them') sendNotification(content);
+        };
+
+        const getDelayMs = () => {
+            switch(settings.replyDelay) {
+                case 'fast': return Math.random() * 1000 + 1000;
+                case 'normal': return Math.random() * 2000 + 3000;
+                case 'slow': return Math.random() * 5000 + 5000;
+                default: return 2000;
+            }
+        };
+
+        const handleSend = () => {
+            const txt = inputText.value.trim(); if (!txt) return;
+            sendMessage('me', txt); inputText.value = ''; saveDraft();
+            triggerReply(getDelayMs());
+        };
+
+        const forceReply = () => triggerReply(getDelayMs(), true);
+        
+        const triggerReply = async (delayMs, isForce = false) => {
+            if (isTyping.value) return;
+            let pool = []; replyGroups.value.forEach(g => g.replies.forEach(r => { if(r.enabled && r.text) pool.push(r.text); }));
+            if(pool.length === 0) return;
+            
+            isTyping.value = true; scrollToBottom();
+            
+            setTimeout(async () => {
+                const count = isForce ? (Math.floor(Math.random() * 3) + 1) : 1;
+                for(let i=0; i<count; i++) {
+                    sendMessage('them', pool[Math.floor(Math.random() * pool.length)]);
+                    if(i < count -1) { scrollToBottom(); await new Promise(r => setTimeout(r, 800)); }
+                }
+                isTyping.value = false;
+            }, delayMs);
+        };
+
+        watch(() => settings.autoReplyInterval, (val) => {
+            if(activeReplyTimer) clearInterval(activeReplyTimer);
+            if(val > 0) activeReplyTimer = setInterval(() => forceReply(), val * 60 * 1000);
+        });
+
+        const deleteMsg = (id) => showModal('confirm', '抹去痕迹', { message: '一旦拂去，再无踪影。', onConfirm: () => messages.value = messages.value.filter(m => m.id !== id) });
+
+        // 截图与搜索
+        const selectAllCapture = () => selectedCaptureMsgs.value = [...messages.value];
+        const generateScreenshot = () => {
+            selectedCaptureMsgs.value.sort((a,b) => messages.value.findIndex(m=>m.id===a.id) - messages.value.findIndex(m=>m.id===b.id));
+            nextTick(() => {
+                const el = document.getElementById('hidden-capture-area');
+                html2canvas(el, { backgroundColor: settings.darkMode ? '#111111' : '#FFFFFF', scale: 2 }).then(canvas => {
+                    const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = `留白_拓印_${Date.now()}.png`; a.click(); captureMode.value = false;
+                });
+            });
+        };
+
+        const toggleSearch = () => { chatState.isSearching = !chatState.isSearching; chatState.keyword=''; chatState.results=[]; };
+        const executeSearch = () => {
+            const k = chatState.keyword.trim(); if(!k) { chatState.results=[]; return; }
+            chatState.results = messages.value.filter(m => m.content.includes(k)).map(m=>m.id);
+            if(chatState.results.length>0) { chatState.currentIdx = chatState.results.length-1; jumpToMsg(); }
+        };
+        const jumpSearch = (dir) => { chatState.currentIdx += dir; if(chatState.currentIdx < 0) chatState.currentIdx = chatState.results.length-1; if(chatState.currentIdx >= chatState.results.length) chatState.currentIdx = 0; jumpToMsg(); };
+        const jumpToMsg = () => { const el = document.getElementById('msg-'+chatState.results[chatState.currentIdx]); if(el) el.scrollIntoView({behavior:'smooth', block:'center'}); };
+        const highlightText = (text) => { if(chatState.keyword && chatState.results.length>0) return text.replace(new RegExp(`(${chatState.keyword})`, 'gi'), '<span class="highlight">$1</span>'); return text; };
+
+        // 卷宗管理
+        const addGroup = () => showModal('prompt', '辟新卷', { onConfirm: (n) => { if(n) { const id = genId(); replyGroups.value.push({ id, name: n, replies: [] }); currentGroupId.value = id; debouncedSave(); } } });
+        const deleteGroup = (id) => showModal('confirm', '焚毁此卷', { onConfirm: () => { replyGroups.value = replyGroups.value.filter(g => g.id !== id); currentGroupId.value = replyGroups.value[0]?.id; debouncedSave(); } });
+        const addReplyToCurrent = () => { if(currentGroup.value) { currentGroup.value.replies.unshift({ id: genId(), text: '', enabled: true }); debouncedSave(); } };
+        const batchAddReplies = () => showModal('batchAdd', '泼墨倾泻', { onConfirm: (val) => { if(!val) return; const lines = val.split('\n').map(l=>l.trim()).filter(Boolean); lines.forEach(text => currentGroup.value.replies.push({ id: genId(), text, enabled: true })); debouncedSave(); }});
+        const deleteSelectedLib = () => { if(selectedLibIds.value.length === 0 || !currentGroup.value) return; currentGroup.value.replies = currentGroup.value.replies.filter(r => !selectedLibIds.value.includes(r.id)); selectedLibIds.value = []; batchSelectMode.value = false; debouncedSave(); };
+        const deduplicateReplies = () => {
+            if(!currentGroup.value) return;
+            const set = new Set(); const arr = [];
+            currentGroup.value.replies.forEach(r => { if(!set.has(r.text)) { set.add(r.text); arr.push(r); } });
+            const diff = currentGroup.value.replies.length - arr.length;
+            currentGroup.value.replies = arr; debouncedSave();
+            showModal('prompt', '涤尘完毕', { message: `共清退 ${diff} 条重复。`, onConfirm: ()=>{} });
+        };
+        watch(currentGroupId, () => { batchSelectMode.value = false; selectedLibIds.value=[]; libSearch.value=''; nextTick(initSortable); });
+        const initSortable = () => {
+            if(sortableInst) sortableInst.destroy();
+            const el = document.querySelector('.reply-sortable-list'); if(!el) return;
+            sortableInst = new Sortable(el, { animation: 150, handle: '.drag-handle', onEnd: (evt) => { if(!currentGroup.value) return; const item = currentGroup.value.replies.splice(evt.oldIndex, 1)[0]; currentGroup.value.replies.splice(evt.newIndex, 0, item); debouncedSave(); } });
+        };
+
+        // 数据备份
+        const exportAllData = () => { const blob = new Blob([JSON.stringify({ messages: messages.value, profiles, settings, replyGroups: replyGroups.value, anniversaries: anniversaries.value })], {type: "application/json"}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `留白_全卷_${Date.now()}.json`; a.click(); };
+        const importAllData = (e) => {
+            const file = e.target.files[0]; if(!file) return; const reader = new FileReader();
+            reader.onload = ev => { try { const data = JSON.parse(ev.target.result); showModal('confirm', '纳藏旧卷', { message: '将覆盖当前所有痕迹，可愿？', onConfirm: () => { if(data.messages) messages.value = data.messages; if(data.profiles) Object.assign(profiles, data.profiles); if(data.settings) Object.assign(settings, { ...settings, ...data.settings }); if(data.replyGroups) replyGroups.value = data.replyGroups; if(data.anniversaries) anniversaries.value = data.anniversaries; debouncedSave(); switchView('home'); }}); } catch(err) { alert('文书残破'); } }; reader.readAsText(file);
+        };
+        const clearData = () => showModal('confirm', '付之一炬', { message: '虚妄皆空。确认烧去？', onConfirm: () => { messages.value = []; debouncedSave(); switchView('home'); }});
+
+        // 纪念日
+        const addAnniversary = () => anniversaries.value.push({ id: genId(), date: '', name: '' });
+        const removeAnniversary = (id) => anniversaries.value = anniversaries.value.filter(a => a.id !== id);
+        const checkAnniversaries = () => {
+            if(anniversaries.value.length === 0) return;
+            const lastCheck = localStorage.getItem('liubai_anni'); const todayStr = new Date().toLocaleDateString();
+            if(lastCheck === todayStr) return; 
+            const d = new Date(); const md = `${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+            const matched = anniversaries.value.find(a => a.date === md);
+            if(matched) setTimeout(() => sendMessage('them', `今日是 ${matched.name}，愿君安好。`), 3000);
+            localStorage.setItem('liubai_anni', todayStr);
+        };
+
+        // 洞察
+        const statData = computed(() => {
+            const total = messages.value.length; 
+            const d = messages.value.length ? new Date(messages.value[0].timestamp) : new Date();
+            const now = Date.now(), day = 86400000;
+            const monthCount = messages.value.filter(m => now - m.timestamp < 30*day).length;
+            
+            const hours = new Array(24).fill(0);
+            messages.value.forEach(m => hours[new Date(m.timestamp).getHours()]++);
+            const peakHour = hours.indexOf(Math.max(...hours, 1));
+
+            const getTop = (sender) => {
+                const map = {}; messages.value.filter(m=>m.sender===sender).forEach(m=> map[m.content] = (map[m.content]||0)+1);
+                const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+                return sorted.length ? sorted[0][0] : null;
+            };
+
+            return { 
+                firstTime: `${d.getFullYear()}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getDate().toString().padStart(2,'0')}`, 
+                monthCount, peakHour, topWordMe: getTop('me'), topWordThem: getTop('them')
+            }
+        });
+
+        const switchView = (v) => currentView.value = v;
+
+        onMounted(() => { initData(); setTimeout(() => { if(window.lucide) lucide.createIcons(); document.documentElement.classList.toggle('dark', settings.darkMode); }, 500); document.addEventListener('click', () => { if(settings.soundEnabled && !audioCtx) initAudio(); }, {once:true}); });
+
+        return {
+            appState, currentView, unreadCount, messages, inputText, isTyping, profiles, settings, presetBgs, anniversaries,
+            replyGroups, currentGroupId, currentGroup, captureMode, selectedCaptureMsgs, chatState, statData, modal, customStyleVars,
+            libSearch, batchSelectMode, selectedLibIds, filteredReplies,
+            switchView, handleSend, forceReply, deleteMsg, editProfile, saveDraft, highlightText, toggleSearch, executeSearch, jumpSearch, generateScreenshot, selectAllCapture,
+            addGroup, deleteGroup, addReplyToCurrent, batchAddReplies, deleteSelectedLib, deduplicateReplies,
+            exportAllData, importAllData, clearData, debouncedSave, showModal, closeModal, confirmModal, handleImgUpload, reqNotification, addAnniversary, removeAnniversary
+        };
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
