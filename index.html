@@ -2,231 +2,288 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- PWA 配置 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://i.postimg.cc/xd70gqV7/134.jpg">
-    <title>留白</title>
+    <title>无言</title>
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/localforage@1.10.0/dist/localforage.min.js"></script>
     <script src="https://unpkg.com/sortablejs@1.15.0/Sortable.min.js"></script>
-    <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        bg: 'var(--color-bg)', text: 'var(--color-text)',
-                        gray: 'var(--color-gray)', border: 'var(--color-border)'
-                    }
-                }
-            }
+            theme: { extend: { colors: { bg: 'var(--color-bg)', text: 'var(--color-text)', gray: 'var(--color-gray)', border: 'var(--color-border)', mask: 'var(--color-mask)' } } }
         }
     </script>
 
     <style>
         :root {
-            --color-bg: #F8F9FA; --color-text: #222222;
-            --color-gray: #888888; --color-border: #E5E5E5;
+            --color-bg: #FAFAFA; --color-text: #1C1C1C;
+            --color-gray: #888888; --color-border: #E8E8E8;
+            --color-mask: rgba(250, 250, 250, 0.85);
             --font-family: 'Noto Serif SC', serif;
         }
         .dark {
-            --color-bg: #111111; --color-text: #E5E5E5;
-            --color-gray: #666666; --color-border: #2A2A2A;
+            --color-bg: #0C0C0C; --color-text: #EAEAEA;
+            --color-gray: #6B6B6B; --color-border: #1E1E1E;
+            --color-mask: rgba(12, 12, 12, 0.85);
         }
 
-        body {
-            background-color: #E5E5E5; color: var(--color-text);
-            margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased;
-            font-family: var(--font-family); transition: background-color 0.5s;
-        }
-        .dark body { background-color: #050505; }
+        body { background-color: var(--color-border); color: var(--color-text); margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased; font-family: var(--font-family); transition: background-color 1s ease; }
         ::-webkit-scrollbar { width: 0px; background: transparent; }
 
-        .app-container {
-            width: 100vw; height: 100vh; position: relative;
-            background-color: var(--color-bg); background-size: cover; background-position: center;
-            display: flex; flex-direction: column; overflow: hidden;
-            transition: all 0.5s ease; border-radius: 0;
-        }
-        @media (min-width: 768px) {
-            .app-container { width: 414px; height: 896px; box-shadow: 0 40px 80px -20px rgba(0,0,0,0.15); border: 1px solid var(--color-border); }
-        }
+        .app-container { width: 100vw; height: 100vh; position: relative; background-color: var(--color-bg); display: flex; flex-direction: column; overflow: hidden; transition: all 0.8s ease; }
+        @media (min-width: 768px) { .app-container { width: 414px; height: 896px; border: 1px solid var(--color-border); box-shadow: 0 10px 40px rgba(0,0,0,0.05); } }
 
-        /* 气泡样式：回归极简带有小尾巴的高级感，移除刻意背景融入 */
-        .message {
-            position: relative !important; line-height: 1.6 !important; word-break: break-word !important; 
-            width: fit-content !important; max-width: 260px !important; border-radius: 4px; padding: 10px 14px;
-        }
-        .message.message-sent { background-color: #F0F0F0; color: #111; box-shadow: none; border: none; }
-        .message.message-received { background-color: #FFFFFF; color: #111; border: 1px solid var(--color-border); box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        /* 气泡美学 */
+        .message { position: relative; line-height: 1.8; word-break: break-word; width: fit-content; max-width: 260px; padding: 12px 16px; border-radius: 2px; letter-spacing: 0.05em; font-weight: 300; transition: background-color 0.3s; }
+        .message.message-sent { background-color: var(--color-border); color: var(--color-text); }
+        .message.message-received { background-color: transparent; color: var(--color-text); border: 1px solid var(--color-border); }
+        .message:active { opacity: 0.7; }
         
-        .dark .message.message-sent { background-color: #2A2A2A; color: #E5E5E5; }
-        .dark .message.message-received { background-color: #111111; color: #E5E5E5; border: 1px solid #333333; }
+        .highlight { border-bottom: 1px solid var(--color-text); padding-bottom: 2px; }
 
-        .message::after { content: ""; position: absolute; width: 8px; height: 8px; top: 18px; transform: translateY(-50%) rotate(45deg); }
-        .message.message-sent::after { right: -4px; background-color: #F0F0F0; }
-        .message.message-received::after { left: -4px; background-color: #FFFFFF; border-left: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
-        
-        .dark .message.message-sent::after { background-color: #2A2A2A; }
-        .dark .message.message-received::after { background-color: #111111; border-color: #333333; }
-
-        .highlight { background-color: rgba(150, 150, 150, 0.3); border-radius: 2px; }
-
-        /* 动画与交互 */
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); position: absolute; width: 100%; height: 100%; }
-        .fade-enter-from { opacity: 0; transform: scale(0.98); }
-        .fade-leave-to { opacity: 0; transform: scale(1.02); }
-
-        .msg-list-enter-active, .msg-list-leave-active { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        /* 动画过渡 */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1); position: absolute; width: 100%; height: 100%; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+        .msg-list-enter-active, .msg-list-leave-active { transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
         .msg-list-enter-from { opacity: 0; transform: translateY(10px); }
         .msg-list-leave-to { opacity: 0; transform: translateY(-10px); }
         
-        .intro-overlay { position: fixed; inset: 0; z-index: 999; background: var(--color-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 2s ease; }
-        .intro-text { font-size: 24px; font-weight: 300; letter-spacing: 0.8em; text-indent: 0.8em; animation: breath 3s infinite alternate; }
-        .intro-sub { font-size: 11px; margin-top: 30px; letter-spacing: 0.5em; text-indent: 0.5em; color: var(--color-gray); opacity: 0; animation: fadeIn 2s forwards 1s; }
-        @keyframes breath { 0% { opacity: 0.3; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes fadeIn { to { opacity: 1; } }
+        /* 手绘水墨序幕 */
+        .intro-bg { background: var(--color-bg); transition: opacity 1.5s ease; }
+        .svg-ink { fill: none; stroke: var(--color-text); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawInk 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards 0.2s; }
+        @keyframes drawInk { to { stroke-dashoffset: 0; } }
+        .ink-text { opacity: 0; animation: inkFade 2s ease forwards 1.5s; }
+        @keyframes inkFade { to { opacity: 1; letter-spacing: 1em; transform: translateX(0.5em); } }
 
-        /* 首页竖排菜单 */
-        .home-menu { display: flex; flex-direction: row; justify-content: center; gap: 40px; height: 60%; align-items: center; }
-        .home-menu-item { writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: 0.6em; cursor: pointer; transition: all 0.4s; font-size: 16px; padding: 10px; opacity: 0.7; }
-        .home-menu-item:hover { opacity: 1; transform: translateY(-5px); }
-        .home-menu-item.active { opacity: 1; border-left: 1px solid var(--color-text); padding-left: 15px; }
+        /* 首页宫格 */
+        .grid-item { opacity: 0; transform: translateY(15px); animation: floatUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; border: 1px solid transparent; transition: all 0.3s; }
+        .grid-item:active { background: var(--color-border); border-color: var(--color-text); }
+        @keyframes floatUp { to { opacity: 1; transform: translateY(0); } }
 
-        input, textarea, button { outline: none; background: transparent; font-family: inherit; }
-        .mag-checkbox { appearance: none; width: 16px; height: 16px; border: 1px solid var(--color-gray); border-radius: 2px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+        input, textarea, button, select { outline: none; background: transparent; font-family: inherit; }
+        .mag-checkbox { appearance: none; width: 12px; height: 12px; border: 1px solid var(--color-gray); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.4s; }
         .mag-checkbox:checked { background: var(--color-text); border-color: var(--color-text); }
-        .mag-checkbox:checked::after { content: ''; width: 4px; height: 8px; border: solid var(--color-bg); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg) translateY(-1px); }
+        .mag-checkbox:checked::after { content: ''; width: 3px; height: 6px; border: solid var(--color-bg); border-width: 0 1px 1px 0; transform: rotate(45deg) translateY(-1px); }
         
-        .typing-indicator { animation: typingBreathe 1.5s infinite alternate; }
-        @keyframes typingBreathe { 0% { opacity: 0.2; } 100% { opacity: 0.8; } }
+        .typing-indicator { animation: typingBreathe 2s infinite ease-in-out; }
+        @keyframes typingBreathe { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.7; } }
+
+        /* 悬浮音乐匣 */
+        .music-widget { touch-action: none; transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.4s, border-radius 0.4s; }
+        .music-spin { animation: spin 8s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .drawer-up-enter-active, .drawer-up-leave-active { transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .drawer-up-enter-from, .drawer-up-leave-to { transform: translateY(100%); }
+
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; opacity: 0; position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+        .glass-mask { background: var(--color-mask); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
     </style>
     <style id="custom-font-injection"></style>
+    <style id="dynamic-bubble-style"></style>
 </head>
-<body class="flex justify-center items-center h-screen w-screen transition-colors duration-500">
+<body class="flex justify-center items-center h-screen w-screen transition-colors duration-1000 select-none">
 
 <div id="app" v-cloak :class="{'dark': settings.darkMode}" :style="customStyleVars">
     
-    <!-- 开场动画 -->
-    <div v-if="appState.showIntro" class="intro-overlay text-text" :style="{ opacity: appState.introFading ? 0 : 1 }">
-        <div class="intro-text">白纸无字</div>
-        <div class="intro-sub">静候落笔</div>
+    <!-- 浮光掠影 (Toast) -->
+    <transition name="fade">
+        <div v-if="toast.show" class="fixed top-24 left-0 w-full z-[999] flex justify-center pointer-events-none">
+            <div class="px-6 py-3 bg-bg border border-border flex items-center gap-4 shadow-xl shadow-black/5">
+                <span class="w-1.5 h-1.5 bg-text rounded-full"></span>
+                <span class="text-[11px] tracking-[0.3em] font-light">{{ toast.msg }}</span>
+            </div>
+        </div>
+    </transition>
+
+    <!-- 序幕 -->
+    <div v-if="appState.showIntro" class="intro-bg fixed inset-0 z-[1000] flex flex-col items-center justify-center text-text" :class="{'opacity-0 pointer-events-none': appState.introFading}">
+        <svg width="80" height="80" viewBox="0 0 100 100" class="mb-10 opacity-80">
+            <path class="svg-ink" d="M20,50 C20,20 80,20 80,50 C80,80 50,80 50,50 C50,30 30,70 70,70" />
+        </svg>
+        <div class="ink-text text-[15px] font-light tracking-[0.8em]">无言</div>
     </div>
 
-    <!-- 全局弹窗 -->
-    <transition name="fade">
-        <div v-if="modal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 backdrop-blur-sm px-6">
-            <div class="bg-bg border border-border p-6 w-full max-w-sm shadow-2xl relative">
-                <h3 class="text-[13px] tracking-widest mb-4 font-bold border-b border-border pb-2">{{ modal.title }}</h3>
-                <p v-if="modal.message" class="text-[11px] text-gray mb-6 leading-relaxed whitespace-pre-line">{{ modal.message }}</p>
-                <input v-if="modal.type === 'prompt'" v-model="modal.input" class="w-full border-b border-text py-2 text-[13px] mb-6 transition-colors" :placeholder="modal.placeholder">
-                <textarea v-if="modal.type === 'batchAdd'" v-model="modal.input" rows="6" placeholder="每行一语..." class="w-full border border-border p-3 text-[12px] focus:border-text transition-colors mb-6 resize-none leading-relaxed"></textarea>
-                
-                <div v-if="modal.type === 'profile'" class="mb-6 space-y-4 text-[12px]">
-                    <div><span class="text-gray block mb-1">名讳</span><input v-model="modal.profileData.name" class="w-full border-b border-border py-1 focus:border-text"></div>
-                    <div>
-                        <span class="text-gray block mb-1">容颜</span>
-                        <input type="file" accept="image/*" @change="e => handleImgUpload(e, 'avatar')" class="text-[10px] text-gray mb-2">
-                        <button @click="modal.profileData.avatar=''" class="text-[10px] text-gray border border-border px-2 py-1">拂去容颜</button>
-                    </div>
-                </div>
+    <!-- 梵音匣 (悬浮音乐) -->
+    <div class="fixed z-[90] music-widget flex items-center justify-center bg-bg border border-border shadow-2xl shadow-black/10 overflow-hidden"
+         :class="musicState.minimized ? 'rounded-full w-12 h-12 cursor-move' : 'rounded-sm w-[90%] max-w-[340px] h-32 flex-col p-4'"
+         :style="{ left: musicState.x + 'px', top: musicState.y + 'px', transform: musicState.minimized ? 'none' : 'translate(-50%, -50%)', left: musicState.minimized ? musicState.x+'px' : '50%', top: musicState.minimized ? musicState.y+'px' : '50%' }"
+         @mousedown="startDrag" @touchstart="startDrag">
+        
+        <template v-if="musicState.minimized">
+            <i data-lucide="music" class="w-4 h-4 stroke-1 text-text" :class="{'music-spin': audio && !audio.paused}" @click.stop="musicState.minimized = false"></i>
+        </template>
 
-                <div class="flex justify-end gap-5 text-[11px] tracking-widest mt-2">
-                    <button @click="closeModal" class="text-gray hover:text-text">拂袖</button>
-                    <button @click="confirmModal" class="text-bg bg-text px-4 py-2 hover:opacity-80 transition-opacity">落印</button>
+        <template v-else>
+            <button @click.stop="musicState.minimized = true" class="absolute top-2 right-2 text-gray p-2 hover:text-text"><i data-lucide="minimize-2" class="w-3 h-3 stroke-1"></i></button>
+            <div class="flex-1 flex flex-col justify-center w-full text-center px-4 mt-2">
+                <span class="text-[12px] tracking-widest text-text truncate w-full font-light">{{ currentSong.title || '无音' }}</span>
+                <span class="text-[9px] tracking-widest text-gray truncate w-full mt-1">{{ currentSong.sub || '静待落音' }}</span>
+            </div>
+            <div class="flex items-center justify-center gap-8 w-full mt-2 shrink-0 pb-1">
+                <button @click.stop="togglePlayMode" class="text-gray hover:text-text transition-colors">
+                    <i v-if="musicState.mode===0" data-lucide="list-ordered" class="w-4 h-4 stroke-1"></i>
+                    <i v-if="musicState.mode===1" data-lucide="shuffle" class="w-4 h-4 stroke-1"></i>
+                    <i v-if="musicState.mode===2" data-lucide="repeat-1" class="w-4 h-4 stroke-1"></i>
+                </button>
+                <button @click.stop="prevSong" class="text-text hover:opacity-50"><i data-lucide="skip-back" class="w-4 h-4 stroke-[1.5]"></i></button>
+                <button @click.stop="togglePlay" class="w-10 h-10 border border-border flex items-center justify-center rounded-full text-text hover:bg-border transition-colors">
+                    <i :data-lucide="audio && !audio.paused ? 'pause' : 'play'" class="w-4 h-4 stroke-1" :class="{'ml-1': audio && audio.paused}"></i>
+                </button>
+                <button @click.stop="nextSong" class="text-text hover:opacity-50"><i data-lucide="skip-forward" class="w-4 h-4 stroke-[1.5]"></i></button>
+                <button @click.stop="showPlaylist = true" class="text-gray hover:text-text transition-colors"><i data-lucide="list-music" class="w-4 h-4 stroke-1"></i></button>
+            </div>
+        </template>
+    </div>
+
+    <!-- 藏音阁 (播放列表抽屉) -->
+    <transition name="drawer-up">
+        <div v-if="showPlaylist" class="fixed inset-0 z-[100] bg-bg flex flex-col">
+            <header class="h-16 flex items-center justify-between px-6 border-b border-border shrink-0">
+                <span class="text-[13px] tracking-[0.3em] font-light">藏音阁</span>
+                <div class="flex gap-4">
+                    <button @click="addSong" class="text-text hover:opacity-50"><i data-lucide="plus" class="w-5 h-5 stroke-1"></i></button>
+                    <button @click="showPlaylist = false" class="text-text hover:opacity-50"><i data-lucide="chevron-down" class="w-5 h-5 stroke-1"></i></button>
+                </div>
+            </header>
+            <div class="flex-1 overflow-y-auto p-2">
+                <div v-for="(song, idx) in playlist" :key="idx" class="flex items-center justify-between p-4 border-b border-border/50 group" @click="playSong(idx)">
+                    <div class="flex flex-col max-w-[70%]">
+                        <span class="text-[12px] tracking-widest font-light truncate" :class="musicState.currentIndex === idx ? 'text-text font-normal' : 'text-gray group-hover:text-text'">{{ song.title }}</span>
+                        <span class="text-[9px] tracking-widest text-gray/50 truncate mt-1">{{ song.sub }}</span>
+                    </div>
+                    <div class="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button v-if="song.isCustom" @click.stop="editSong(idx)" class="text-gray hover:text-text"><i data-lucide="edit-2" class="w-3.5 h-3.5 stroke-1"></i></button>
+                        <button v-if="song.isCustom" @click.stop="removeSong(idx)" class="text-gray hover:text-text"><i data-lucide="trash" class="w-3.5 h-3.5 stroke-1"></i></button>
+                        <i v-if="musicState.currentIndex === idx && audio && !audio.paused" data-lucide="bar-chart-2" class="w-4 h-4 stroke-1 text-text"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </transition>
 
-    <div class="app-container text-[14px]" :style="{ backgroundImage: settings.chatBgImg ? `url(${settings.chatBgImg})` : 'none' }">
-        
-        <!-- ================= 雅致首页 ================= -->
-        <transition name="fade">
-            <div v-show="currentView === 'home'" class="absolute inset-0 flex flex-col z-10 p-8" :class="settings.chatBgImg ? 'bg-bg/80 backdrop-blur-md' : 'bg-bg'">
-                <div class="mt-12 mb-auto flex flex-col items-center">
-                    <h1 class="text-4xl tracking-[0.3em] text-text mb-2 font-semibold" style="text-indent: 0.3em;">留白</h1>
-                    <div v-if="unreadCount > 0" class="mt-4 flex items-center gap-2">
-                        <div class="w-1.5 h-1.5 bg-text rounded-full"></div>
-                        <span class="text-[10px] text-text tracking-widest">{{ unreadCount }} 封未读</span>
+    <!-- 全局弹窗 -->
+    <transition name="fade">
+        <div v-if="modal.show" class="fixed inset-0 z-[110] flex items-center justify-center glass-mask px-6" @click.self="closeModal">
+            <div class="border border-border p-8 w-full max-w-[300px] relative bg-bg shadow-2xl shadow-black/10">
+                <h3 class="text-[13px] tracking-[0.4em] mb-8 font-light flex items-center gap-3"><span class="w-1.5 h-1.5 bg-text rotate-45"></span>{{ modal.title }}</h3>
+                <p v-if="modal.message" class="text-[11px] text-gray mb-8 leading-relaxed whitespace-pre-line tracking-wide">{{ modal.message }}</p>
+                
+                <input v-if="modal.type === 'prompt'" v-model="modal.input" class="w-full border-b border-border py-2 text-[12px] mb-8 focus:border-text transition-colors tracking-widest bg-transparent" :placeholder="modal.placeholder">
+                
+                <select v-if="modal.type === 'select'" v-model="modal.input" class="w-full border-b border-border py-2 text-[12px] mb-8 focus:border-text transition-colors tracking-widest bg-transparent appearance-none">
+                    <option value="" disabled>{{ modal.placeholder }}</option>
+                    <option v-for="opt in modal.options" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                </select>
+
+                <textarea v-if="modal.type === 'batchAdd'" v-model="modal.input" rows="5" placeholder="每行一语..." class="w-full border border-border p-4 text-[12px] focus:border-text transition-colors mb-6 resize-none leading-relaxed tracking-wide bg-transparent"></textarea>
+                
+                <div v-if="modal.type === 'profile'" class="mb-8 space-y-8 text-[12px]">
+                    <div>
+                        <span class="text-gray block mb-3 tracking-[0.4em] text-[9px]">名讳</span>
+                        <input v-model="modal.profileData.name" class="w-full border-b border-border py-1 focus:border-text tracking-widest bg-transparent">
+                    </div>
+                    <div>
+                        <span class="text-gray block mb-3 tracking-[0.4em] text-[9px]">容颜</span>
+                        <div class="flex items-center gap-6">
+                            <label class="border border-border px-4 py-2 hover:border-text transition-colors cursor-pointer tracking-[0.2em] text-[10px]">
+                                绘面<input type="file" accept="image/*" @change="e => handleImgUpload(e, 'avatar')" class="hidden">
+                            </label>
+                            <button @click="modal.profileData.avatar=''" class="text-gray hover:text-text tracking-widest transition-colors text-[10px]">拂去</button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="home-menu">
-                    <div class="home-menu-item" @click="switchView('chat')">飞鸽传书</div>
-                    <div class="home-menu-item" @click="switchView('library')">藏经卷宗</div>
-                    <div class="home-menu-item" @click="switchView('aesthetic')">岁时风物</div>
-                    <div class="home-menu-item" @click="switchView('insight')">洞察秋毫</div>
-                    <div class="home-menu-item" @click="switchView('settings')">万象法则</div>
+                <div v-if="modal.type === 'song'" class="mb-8 space-y-6 text-[12px]">
+                    <div><input v-model="modal.songData.title" placeholder="曲名" class="w-full border-b border-border py-2 focus:border-text tracking-widest bg-transparent"></div>
+                    <div><input v-model="modal.songData.sub" placeholder="副语" class="w-full border-b border-border py-2 focus:border-text tracking-widest bg-transparent"></div>
+                    <div><input v-model="modal.songData.url" placeholder="音律卷轴 (URL)" class="w-full border-b border-border py-2 focus:border-text tracking-widest bg-transparent font-sans text-[10px]"></div>
                 </div>
-                
-                <div class="mt-auto text-center text-[10px] text-gray tracking-[0.5em] border-t border-border pt-6 pb-4">
-                    静水流深
+
+                <div class="flex justify-end gap-8 text-[11px] tracking-[0.3em]">
+                    <button @click="closeModal" class="text-gray hover:text-text transition-colors">舍</button>
+                    <button @click="confirmModal" class="text-text font-medium hover:opacity-50 transition-opacity">印</button>
+                </div>
+            </div>
+        </div>
+    </transition>
+
+    <div class="app-container text-[14px]">
+        
+        <!-- 首页 (九宫格美学) -->
+        <transition name="fade">
+            <div v-show="currentView === 'home'" class="absolute inset-0 flex flex-col z-10 p-8 bg-bg">
+                <div class="mt-16 mb-12 flex flex-col items-center">
+                    <svg width="40" height="40" viewBox="0 0 100 100" class="mb-4">
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2 4"/>
+                        <path d="M50,20 L50,80 M20,50 L80,50" stroke="currentColor" stroke-width="0.5" opacity="0.3"/>
+                    </svg>
+                    <span class="text-[10px] text-gray tracking-[0.8em] font-light ml-2">静水流深</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 flex-1 content-start">
+                    <div v-for="(item, idx) in homeMenus" :key="idx" class="grid-item aspect-square flex flex-col items-center justify-center cursor-pointer group relative" :style="`animation-delay: ${0.1 + idx*0.05}s`" @click="switchView(item.view)">
+                        <i :data-lucide="item.icon" class="w-6 h-6 stroke-1 text-gray group-hover:text-text mb-4 transition-colors"></i>
+                        <span class="text-[11px] tracking-[0.4em] text-gray group-hover:text-text transition-colors ml-1 font-light">{{ item.name }}</span>
+                        <div v-if="item.view === 'chat' && unreadCount > 0" class="absolute top-1/4 right-1/4 w-1.5 h-1.5 bg-text rounded-full"></div>
+                    </div>
                 </div>
             </div>
         </transition>
         
-        <!-- ================= 飞鸽传书 (交谈) ================= -->
+        <!-- 飞鸽传书 -->
         <transition name="fade">
             <div v-show="currentView === 'chat'" class="absolute inset-0 flex flex-col z-20">
-                <!-- 顶部栏：全透明无边框 -->
-                <header class="h-16 flex items-center justify-between px-4 shrink-0 bg-transparent relative z-10 pt-2">
-                    <div class="flex items-center gap-4">
-                        <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity p-2"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.2]"></i></button>
-                        <div class="flex flex-col cursor-pointer" @click="editProfile('them')">
-                            <span class="text-[15px] font-medium tracking-widest">{{ profiles.them.name }}</span>
-                            <span v-if="isTyping" class="text-[10px] text-gray tracking-widest absolute top-12 typing-indicator">落笔中...</span>
+                <div v-if="settings.chatBgImg" class="absolute inset-0 bg-cover bg-center -z-10 opacity-[0.85]" :style="{backgroundImage: `url(${settings.chatBgImg})`}"></div>
+                
+                <header class="h-16 flex items-center justify-between px-5 shrink-0 bg-transparent relative z-10 pt-4">
+                    <div class="flex items-center gap-5">
+                        <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity"><i data-lucide="chevron-left" class="w-5 h-5 stroke-1"></i></button>
+                        <div class="flex flex-col cursor-pointer" @click="chatState.isGroupMode ? openGroupManager() : editProfile('them')">
+                            <span class="text-[14px] font-light tracking-[0.3em]">{{ chatState.isGroupMode ? '众生' : profiles.them.name }}</span>
+                            <span v-if="isTyping" class="text-[9px] text-gray tracking-[0.4em] absolute top-12 typing-indicator">落笔中...</span>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button v-if="!captureMode" @click="toggleSearch" class="text-text hover:opacity-50 transition-opacity p-2"><i data-lucide="search" class="w-4 h-4 stroke-[1.5]"></i></button>
-                        <button v-if="!captureMode" @click="captureMode = true; selectedCaptureMsgs=[]" class="text-text hover:opacity-50 transition-opacity p-2"><i data-lucide="scan" class="w-4 h-4 stroke-[1.5]"></i></button>
-                        <button v-if="captureMode" @click="captureMode = false" class="text-[11px] text-gray hover:text-text tracking-widest p-2">收归</button>
+                    <div class="flex items-center gap-4">
+                        <button @click="openGroupManager" class="text-text hover:opacity-50 transition-opacity" :class="{'text-gray': !chatState.isGroupMode}"><i data-lucide="users" class="w-4 h-4 stroke-1"></i></button>
+                        <button @click="toggleSearch" class="text-text hover:opacity-50 transition-opacity"><i data-lucide="search" class="w-4 h-4 stroke-1"></i></button>
                     </div>
                 </header>
 
-                <!-- 搜索栏 -->
-                <div v-if="chatState.isSearching" class="bg-bg/90 backdrop-blur-sm px-6 py-3 flex items-center gap-4 text-xs shrink-0 z-10 shadow-sm">
-                    <input v-model="chatState.keyword" type="text" placeholder="寻章摘句..." class="flex-1 bg-transparent border-b border-border focus:border-text py-1 transition-colors" @input="executeSearch">
-                    <span v-if="chatState.results.length > 0" class="text-gray text-[10px]">{{ chatState.currentIdx + 1 }}/{{ chatState.results.length }}</span>
-                    <button @click="jumpSearch(-1)" class="text-text" :disabled="chatState.results.length===0"><i data-lucide="chevron-up" class="w-4 h-4 stroke-[1.5]"></i></button>
-                    <button @click="jumpSearch(1)" class="text-text" :disabled="chatState.results.length===0"><i data-lucide="chevron-down" class="w-4 h-4 stroke-[1.5]"></i></button>
+                <div v-if="chatState.isSearching" class="glass-mask px-6 py-4 flex items-center gap-5 text-xs shrink-0 z-10 border-b border-border">
+                    <input v-model="chatState.keyword" type="text" placeholder="寻觅..." class="flex-1 bg-transparent border-b border-border focus:border-text py-1 transition-colors tracking-widest" @input="executeSearch">
+                    <span v-if="chatState.results.length > 0" class="text-gray text-[10px] font-sans">{{ chatState.currentIdx + 1 }}/{{ chatState.results.length }}</span>
+                    <button @click="jumpSearch(-1)" class="text-text disabled:opacity-30"><i data-lucide="chevron-up" class="w-4 h-4 stroke-1"></i></button>
+                    <button @click="jumpSearch(1)" class="text-text disabled:opacity-30"><i data-lucide="chevron-down" class="w-4 h-4 stroke-1"></i></button>
                 </div>
 
-                <!-- 消息流 -->
-                <main id="chat-container" class="flex-1 overflow-y-auto px-4 py-4 scroll-smooth" @click="chatState.isSearching = false">
-                    <div class="pb-6">
+                <main id="chat-container" class="flex-1 overflow-y-auto px-5 py-6 scroll-smooth" @click="chatState.isSearching = false">
+                    <div class="pb-8">
                         <transition-group name="msg-list">
-                            <div v-for="msg in messages" :key="msg.id" :id="'msg-'+msg.id" class="mb-6 relative group flex gap-3" :class="msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'">
+                            <div v-for="msg in messages" :key="msg.id" :id="'msg-'+msg.id" class="mb-8 relative group flex gap-4" :class="msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'">
                                 
-                                <div v-if="captureMode" class="mt-2 shrink-0">
-                                    <input type="checkbox" :value="msg" v-model="selectedCaptureMsgs" class="mag-checkbox">
-                                </div>
-
-                                <div v-if="settings.showAvatar" class="shrink-0 w-10 h-10 cursor-pointer mt-0.5" @click="editProfile(msg.sender)">
-                                    <div class="w-full h-full bg-bg border border-border flex items-center justify-center overflow-hidden shadow-sm" :style="{ borderRadius: settings.avatarRadius + '%' }">
-                                        <img v-if="profiles[msg.sender].avatar" :src="profiles[msg.sender].avatar" class="w-full h-full object-cover">
-                                        <span v-else class="text-[13px] text-gray">{{ profiles[msg.sender].name.charAt(0) }}</span>
+                                <div v-if="settings.showAvatar" class="shrink-0 w-8 h-8 cursor-pointer mt-1" @click="editProfile(msg.sender)">
+                                    <div class="w-full h-full bg-bg border border-border flex items-center justify-center overflow-hidden" :style="{ borderRadius: settings.avatarRadius + '%' }">
+                                        <img v-if="getSenderProfile(msg.sender).avatar" :src="getSenderProfile(msg.sender).avatar" class="w-full h-full object-cover">
+                                        <span v-else class="text-[11px] text-gray font-light">{{ getSenderProfile(msg.sender).name.charAt(0) }}</span>
                                     </div>
                                 </div>
 
                                 <div class="flex flex-col relative max-w-[calc(100%-60px)]" :class="msg.sender === 'me' ? 'items-end' : 'items-start'">
-                                    <span v-if="settings.showName" class="text-[10px] text-gray mb-1.5 tracking-widest px-1 opacity-70">{{ profiles[msg.sender].name }}</span>
+                                    <span v-if="settings.showName || chatState.isGroupMode" class="text-[9px] text-gray mb-1.5 tracking-[0.2em] px-1 opacity-60">{{ getSenderProfile(msg.sender).name }}</span>
                                     
-                                    <button @click="deleteMsg(msg.id)" class="absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity text-gray hover:text-text p-1 z-10" :class="msg.sender === 'me' ? '-left-8' : '-right-8'">
-                                        <i data-lucide="x" class="w-3.5 h-3.5 stroke-[1.5]"></i>
+                                    <button @click="deleteMsg(msg.id)" class="absolute top-2 opacity-0 group-hover:opacity-100 transition-opacity text-gray hover:text-text p-1 z-10" :class="msg.sender === 'me' ? '-left-8' : '-right-8'">
+                                        <i data-lucide="x" class="w-3 h-3 stroke-1"></i>
                                     </button>
 
-                                    <div class="message" 
+                                    <div class="message" @dblclick="copyText(msg.content)"
                                          :class="[msg.sender === 'me' ? 'message-sent' : 'message-received']" 
                                          :style="{ fontSize: settings.fontSize + 'px' }" 
                                          v-html="highlightText(msg.content)">
@@ -237,194 +294,75 @@
                     </div>
                 </main>
 
-                <!-- 输入区：全透明无边框 -->
-                <footer class="shrink-0 bg-transparent pb-4 relative z-10">
-                    <div v-if="captureMode" class="h-16 flex items-center justify-between px-6 bg-bg/90 backdrop-blur-sm">
-                        <div class="flex items-center gap-4">
-                            <button @click="selectAllCapture" class="text-[11px] tracking-widest text-text border-b border-text">全揽</button>
-                            <span class="text-[11px] tracking-widest text-gray">选定 {{ selectedCaptureMsgs.length }} 帧</span>
-                        </div>
-                        <button @click="generateScreenshot" class="px-5 py-2 border border-text text-text hover:bg-text hover:text-bg transition-colors text-[11px] tracking-widest" :disabled="selectedCaptureMsgs.length===0">拓印</button>
-                    </div>
-                    <div v-else class="flex items-end px-4 py-2 gap-3 mx-2 bg-bg/80 backdrop-blur-md rounded-md shadow-sm border border-border/50">
-                        <button @click="forceReply" :disabled="isTyping" class="p-2 text-gray hover:text-text shrink-0 disabled:opacity-30 transition-colors pb-2" title="索信">
-                            <i data-lucide="feather" class="w-5 h-5 stroke-[1.2]"></i>
+                <footer class="shrink-0 bg-transparent pb-8 relative z-10 pt-2">
+                    <div class="flex items-end px-5 gap-4 border-b border-border focus-within:border-text transition-colors mx-5 pb-2">
+                        <button @click="forceReply" :disabled="isTyping" class="p-1 text-gray hover:text-text shrink-0 disabled:opacity-30 transition-colors" title="风铃">
+                            <i data-lucide="wind" class="w-4 h-4 stroke-1"></i>
                         </button>
                         <textarea v-model="inputText" @keydown.enter.prevent="handleSend" @input="saveDraft" rows="1" 
-                                  class="flex-1 py-2.5 text-[14px] resize-none max-h-32 tracking-wide placeholder:text-gray/60 leading-relaxed border-none focus:ring-0 transition-colors bg-transparent"
-                                  placeholder="落墨..."></textarea>
-                        <button @click="handleSend" class="p-2 text-text hover:opacity-50 transition-opacity shrink-0 pb-2" title="发函">
-                            <i data-lucide="send" class="w-5 h-5 stroke-[1.2]"></i>
+                                  class="flex-1 py-1 text-[13px] resize-none max-h-32 tracking-[0.1em] placeholder:text-gray/50 placeholder:font-light leading-relaxed border-none bg-transparent"
+                                  placeholder="落笔..."></textarea>
+                        <button @click="handleSend" class="p-1 text-text hover:opacity-50 transition-opacity shrink-0">
+                            <i data-lucide="send" class="w-4 h-4 stroke-1"></i>
                         </button>
                     </div>
                 </footer>
             </div>
         </transition>
 
-        <!-- ================= 岁时风物 (外观与纪念日) ================= -->
-        <transition name="fade">
-            <div v-show="currentView === 'aesthetic'" class="absolute inset-0 flex flex-col z-20 bg-bg">
-                <header class="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
-                    <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity p-2"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.2]"></i></button>
-                    <span class="text-[14px] tracking-widest font-medium">岁时风物</span>
-                    <div class="w-10"></div>
-                </header>
-                <main class="flex-1 overflow-y-auto p-6 space-y-12 pb-20">
-                    
-                    <!-- 背景卷轴 -->
-                    <section>
-                        <h3 class="text-[12px] text-gray tracking-[0.2em] border-b border-border pb-2 mb-4">画壁 (背景)</h3>
-                        <div class="grid grid-cols-3 gap-3 mb-4">
-                            <div v-for="(bg, idx) in presetBgs" :key="idx" @click="settings.chatBgImg = bg.url" 
-                                 class="aspect-[9/16] rounded border cursor-pointer relative overflow-hidden transition-all"
-                                 :class="settings.chatBgImg === bg.url ? 'border-text ring-1 ring-text' : 'border-border hover:border-gray'">
-                                <div v-if="bg.url" class="absolute inset-0 bg-cover bg-center" :style="{backgroundImage: `url(${bg.url})`}"></div>
-                                <div v-else class="absolute inset-0 bg-bg flex items-center justify-center text-[10px] text-gray tracking-widest">无尘</div>
-                            </div>
-                        </div>
-                        <div>
-                            <span class="tracking-widest block mb-2 text-[11px]">自定义画卷</span>
-                            <input type="file" accept="image/*" @change="e => handleImgUpload(e, 'bg')" class="text-[10px] text-gray w-full">
-                        </div>
-                    </section>
-
-                    <!-- 字形 -->
-                    <section>
-                        <h3 class="text-[12px] text-gray tracking-[0.2em] border-b border-border pb-2 mb-4">字形 (字体)</h3>
-                        <div class="space-y-4 text-[12px]">
-                            <div>
-                                <span class="tracking-widest block mb-2">引入外部字形 (URL)</span>
-                                <input v-model="settings.customFontUrl" placeholder="如谷歌字体CSS链接" class="w-full border-b border-border py-1 focus:border-text">
-                            </div>
-                            <div>
-                                <span class="tracking-widest block mb-2">指定族讳 (Font Family)</span>
-                                <input v-model="settings.customFontName" placeholder="如 'Noto Serif SC'" class="w-full border-b border-border py-1 focus:border-text">
-                            </div>
-                            <p class="text-[10px] text-gray leading-relaxed">提示：若留空，则顺应天意，使用默认宋体。</p>
-                        </div>
-                    </section>
-
-                    <!-- 岁时铭记 -->
-                    <section>
-                        <div class="flex justify-between items-end border-b border-border pb-2 mb-4">
-                            <h3 class="text-[12px] text-gray tracking-[0.2em]">岁时铭记 (纪念日)</h3>
-                            <button @click="addAnniversary" class="text-[11px] tracking-widest hover:text-gray">+ 添一笔</button>
-                        </div>
-                        <div class="space-y-3">
-                            <div v-for="anni in anniversaries" :key="anni.id" class="flex gap-3 items-center bg-bg border border-border p-3">
-                                <input v-model="anni.date" placeholder="月-日 (如 01-01)" class="w-20 text-[11px] bg-transparent border-b border-border text-center">
-                                <input v-model="anni.name" placeholder="何事" class="flex-1 text-[12px] bg-transparent border-b border-border">
-                                <button @click="removeAnniversary(anni.id)" class="text-gray hover:text-text"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
-                            </div>
-                            <div v-if="anniversaries.length === 0" class="text-[10px] text-gray text-center py-4 tracking-widest">暂无牵挂之日</div>
-                        </div>
-                    </section>
-                </main>
-            </div>
-        </transition>
-
-        <!-- ================= 洞察秋毫 (月度总结风格) ================= -->
-        <transition name="fade">
-            <div v-show="currentView === 'insight'" class="absolute inset-0 flex flex-col z-20 bg-bg">
-                <header class="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
-                    <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity p-2"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.2]"></i></button>
-                    <span class="text-[14px] tracking-widest font-medium">洞察秋毫</span>
-                    <div class="w-10"></div>
-                </header>
-                <main class="flex-1 overflow-y-auto p-8 flex flex-col gap-12 bg-bg text-center">
-                    
-                    <div class="mt-4">
-                        <div class="text-[12px] tracking-[0.3em] text-gray mb-2">本月纪实</div>
-                        <div class="text-5xl font-light mb-4">{{ statData.monthCount }}</div>
-                        <div class="text-[10px] tracking-widest text-gray">次落墨交心</div>
-                    </div>
-
-                    <div class="border-t border-border pt-10">
-                        <div class="text-[12px] tracking-[0.3em] text-gray mb-8">光阴流转</div>
-                        <div class="grid grid-cols-2 gap-8 text-left max-w-[240px] mx-auto">
-                            <div>
-                                <div class="text-[10px] text-gray tracking-widest mb-1">立卷总计</div>
-                                <div class="text-2xl">{{ messages.length }}</div>
-                            </div>
-                            <div>
-                                <div class="text-[10px] text-gray tracking-widest mb-1">最频时辰</div>
-                                <div class="text-2xl">{{ statData.peakHour }} <span class="text-[12px]">时</span></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="border-t border-border pt-10">
-                        <div class="text-[12px] tracking-[0.3em] text-gray mb-8">言辞拾遗</div>
-                        <div class="flex flex-col gap-6 max-w-[240px] mx-auto text-left">
-                            <div v-if="statData.topWordMe" class="bg-border/30 p-4 rounded-sm">
-                                <span class="text-[10px] text-gray block mb-2 tracking-widest">吾常言</span>
-                                <span class="text-[14px] tracking-wide">"{{ statData.topWordMe }}"</span>
-                            </div>
-                            <div v-if="statData.topWordThem" class="bg-border/30 p-4 rounded-sm">
-                                <span class="text-[10px] text-gray block mb-2 tracking-widest">客常言</span>
-                                <span class="text-[14px] tracking-wide">"{{ statData.topWordThem }}"</span>
-                            </div>
-                            <div v-if="!statData.topWordMe && !statData.topWordThem" class="text-[11px] text-gray text-center">尚无足量言语</div>
-                        </div>
-                    </div>
-
-                    <div class="mt-auto pt-10 pb-4">
-                        <div class="text-[9px] text-gray tracking-[0.3em]">自 {{ statData.firstTime }} 起结缘</div>
-                    </div>
-                </main>
-            </div>
-        </transition>
-
-        <!-- ================= 藏经卷宗 ================= -->
+        <!-- 藏经卷宗 -->
         <transition name="fade">
             <div v-show="currentView === 'library'" class="absolute inset-0 flex flex-col z-20 bg-bg">
-                <header class="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
-                    <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity p-2"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.2]"></i></button>
-                    <span class="text-[14px] tracking-widest font-medium">藏经卷宗</span>
-                    <div class="flex gap-4">
-                        <button @click="deduplicateReplies" class="text-text hover:text-gray text-[11px] tracking-widest">涤尘</button>
-                        <button @click="batchSelectMode = !batchSelectMode" class="text-text hover:text-gray text-[11px] tracking-widest">{{ batchSelectMode ? '完成' : '点选' }}</button>
+                <header class="h-16 flex items-center justify-between px-5 border-b border-border shrink-0">
+                    <div class="flex items-center gap-4">
+                        <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity"><i data-lucide="chevron-left" class="w-5 h-5 stroke-1"></i></button>
+                        <span class="text-[13px] tracking-[0.4em] font-light">藏经卷宗</span>
+                    </div>
+                    <div class="flex items-center gap-5">
+                        <button @click="deduplicateReplies" class="text-gray hover:text-text transition-colors"><i data-lucide="sparkles" class="w-4 h-4 stroke-1"></i></button>
+                        <button @click="batchSelectMode = !batchSelectMode" class="text-[10px] tracking-[0.2em] transition-colors" :class="batchSelectMode?'text-text border-b border-text':'text-gray hover:text-text'">{{ batchSelectMode ? '毕' : '择' }}</button>
                     </div>
                 </header>
 
                 <div class="flex flex-1 overflow-hidden">
-                    <div class="w-24 border-r border-border overflow-y-auto flex flex-col pb-10 relative shrink-0">
-                        <div v-for="g in replyGroups" :key="g.id" 
-                             class="py-5 px-2 text-[12px] tracking-widest text-center border-b border-border cursor-pointer transition-colors relative"
-                             :class="currentGroupId === g.id ? 'bg-text text-bg' : 'text-gray hover:bg-border/30'" 
-                             @click="currentGroupId = g.id">
-                            {{ g.name }}
-                            <button v-if="currentGroupId === g.id && replyGroups.length>1" @click.stop="deleteGroup(g.id)" class="absolute right-1 top-5 text-bg/50 hover:text-bg"><i data-lucide="x" class="w-3 h-3"></i></button>
+                    <div class="w-20 border-r border-border flex flex-col relative shrink-0 bg-bg">
+                        <div class="flex-1 overflow-y-auto pb-4 pt-2">
+                            <div v-for="g in replyGroups" :key="g.id" class="py-5 px-1 text-[10px] tracking-[0.3em] text-center cursor-pointer transition-all relative flex flex-col items-center group" @click="currentGroupId = g.id">
+                                <span :class="currentGroupId === g.id ? 'text-text font-medium' : 'text-gray group-hover:text-text'" style="writing-mode: vertical-rl; text-orientation: upright;">{{ g.name }}</span>
+                                <button v-if="currentGroupId === g.id && replyGroups.length>1" @click.stop="deleteGroup(g.id)" class="absolute bottom-1 text-gray opacity-0 group-hover:opacity-100 hover:text-text"><i data-lucide="x" class="w-3 h-3 stroke-1"></i></button>
+                            </div>
+                            <button @click="addGroup" class="w-full py-6 text-gray hover:text-text transition-colors flex justify-center"><i data-lucide="plus" class="w-4 h-4 stroke-1"></i></button>
                         </div>
-                        <button @click="addGroup" class="py-5 text-[10px] text-gray tracking-widest hover:text-text">+ 辟新卷</button>
                     </div>
 
-                    <div class="flex-1 flex flex-col overflow-hidden bg-bg relative">
-                        <div v-if="currentGroup" class="shrink-0 p-4 pb-2 border-b border-border flex justify-between items-end gap-2">
-                            <input v-model="currentGroup.name" @blur="debouncedSave" class="text-[15px] font-medium tracking-widest bg-transparent border-none flex-1">
-                            <input v-model="libSearch" placeholder="寻章..." class="w-20 text-[11px] bg-transparent border-b border-border focus:border-text py-1 text-right">
+                    <div class="flex-1 flex flex-col overflow-hidden relative bg-bg">
+                        <div v-if="currentGroup" class="shrink-0 p-6 pb-4 border-b border-border flex justify-between items-end gap-4">
+                            <input v-model="currentGroup.name" @blur="debouncedSave" class="text-[14px] font-light tracking-[0.4em] bg-transparent border-none flex-1 text-text placeholder:text-gray/30" placeholder="卷名">
+                            <input v-model="libSearch" placeholder="寻..." class="w-12 text-[10px] tracking-widest bg-transparent border-b border-border focus:border-text py-1 text-right transition-colors">
                         </div>
 
-                        <div class="flex-1 overflow-y-auto p-4 pb-20 reply-sortable-list space-y-3">
-                            <div v-if="currentGroup && filteredReplies.length === 0" class="text-[11px] text-gray text-center mt-10 tracking-widest">此卷尚空</div>
+                        <div class="flex-1 overflow-y-auto p-5 pb-24 reply-sortable-list space-y-6">
+                            <div v-if="currentGroup && filteredReplies.length === 0" class="text-[10px] text-gray text-center mt-20 tracking-[0.6em] font-light">空</div>
                             
-                            <div v-for="reply in filteredReplies" :key="reply.id" :data-id="reply.id" class="flex items-start gap-3 p-3 border border-border bg-bg group transition-colors" :class="{'opacity-40': !reply.enabled}">
-                                <div v-if="batchSelectMode" class="mt-0.5 shrink-0">
-                                    <input type="checkbox" :value="reply.id" v-model="selectedLibIds" class="mag-checkbox">
-                                </div>
-                                <i v-else data-lucide="grip-vertical" class="w-4 h-4 text-border mt-0.5 cursor-grab active:cursor-grabbing drag-handle hover:text-gray transition-colors shrink-0"></i>
+                            <div v-for="reply in filteredReplies" :key="reply.id" :data-id="reply.id" class="flex items-start gap-4 group transition-opacity" :class="{'opacity-30': !reply.enabled}">
+                                <div v-if="batchSelectMode" class="mt-1 shrink-0"><input type="checkbox" :value="reply.id" v-model="selectedLibIds" class="mag-checkbox"></div>
+                                <i v-else data-lucide="grip-vertical" class="w-4 h-4 text-border mt-1.5 cursor-grab active:cursor-grabbing drag-handle hover:text-gray transition-colors shrink-0 stroke-1"></i>
                                 
-                                <textarea v-model="reply.text" @blur="debouncedSave" rows="1" class="flex-1 text-[13px] bg-transparent resize-none leading-relaxed min-h-[24px]" :class="{'line-through': !reply.enabled}"></textarea>
+                                <textarea v-model="reply.text" @blur="debouncedSave" rows="1" class="flex-1 text-[12px] tracking-wider bg-transparent border-b border-transparent group-hover:border-border focus:border-text resize-none leading-relaxed min-h-[30px] transition-colors py-1 font-light" :class="{'line-through text-gray': !reply.enabled}"></textarea>
                                 
-                                <button @click="reply.enabled = !reply.enabled; debouncedSave()" class="text-[10px] text-gray hover:text-text border border-border px-2 py-1 shrink-0">{{ reply.enabled ? '启' : '禁' }}</button>
+                                <button @click="reply.enabled = !reply.enabled; debouncedSave()" class="text-[9px] text-gray hover:text-text border border-border w-5 h-5 flex items-center justify-center shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">{{ reply.enabled ? '启' : '禁' }}</button>
                             </div>
                         </div>
 
-                        <div class="shrink-0 p-4 border-t border-border bg-bg flex gap-3">
-                            <button v-if="batchSelectMode" @click="deleteSelectedLib" class="flex-1 py-3 bg-text text-bg text-[11px] tracking-widest hover:opacity-80">焚毁选中</button>
+                        <div class="absolute bottom-0 w-full p-4 border-t border-border glass-mask flex gap-3">
+                            <template v-if="batchSelectMode">
+                                <button @click="batchAction('delete')" class="flex-1 py-3 border border-border text-[10px] tracking-[0.3em] text-gray hover:text-bg hover:bg-text transition-all">焚毁</button>
+                                <button @click="batchAction('toggle')" class="flex-1 py-3 border border-border text-[10px] tracking-[0.3em] text-text hover:bg-border transition-all">启/禁</button>
+                                <button @click="batchAction('move')" class="flex-1 py-3 border border-text text-[10px] tracking-[0.3em] text-text hover:bg-text hover:text-bg transition-all">迁移</button>
+                            </template>
                             <template v-else>
-                                <button @click="addReplyToCurrent" class="flex-1 py-3 border border-border text-[11px] tracking-widest hover:text-bg hover:bg-text transition-colors">添一笔</button>
-                                <button @click="batchAddReplies" class="flex-1 py-3 border border-dashed border-border text-[11px] tracking-widest hover:border-text transition-colors">批量泼墨</button>
+                                <button @click="addReplyToCurrent" class="flex-1 py-3 border border-border text-[11px] tracking-[0.4em] text-text hover:bg-border transition-colors">添笔</button>
+                                <button @click="batchAddReplies" class="flex-1 py-3 border border-text text-[11px] tracking-[0.4em] text-text hover:bg-text hover:text-bg transition-colors">泼墨</button>
                             </template>
                         </div>
                     </div>
@@ -432,85 +370,264 @@
             </div>
         </transition>
 
-        <!-- ================= 万象法则(设置) ================= -->
+        <!-- 流年印记 -->
         <transition name="fade">
-            <div v-show="currentView === 'settings'" class="absolute inset-0 flex flex-col z-20 bg-bg">
-                <header class="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
-                    <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity p-2"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.2]"></i></button>
-                    <span class="text-[14px] tracking-widest font-medium">万象法则</span>
-                    <div class="w-10"></div>
+            <div v-show="currentView === 'timeline'" class="absolute inset-0 flex flex-col z-20 bg-bg">
+                <header class="h-16 flex items-center justify-between px-5 border-b border-border shrink-0">
+                    <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity"><i data-lucide="chevron-left" class="w-5 h-5 stroke-1"></i></button>
+                    <div class="flex gap-8">
+                        <button @click="timelineTab = 'anni'" class="text-[12px] tracking-[0.4em] transition-colors pb-1" :class="timelineTab==='anni'?'text-text border-b border-text':'text-gray'">岁时</button>
+                        <button @click="timelineTab = 'period'" class="text-[12px] tracking-[0.4em] transition-colors pb-1" :class="timelineTab==='period'?'text-text border-b border-text':'text-gray'">天葵</button>
+                    </div>
+                    <button @click="timelineTab==='anni'?addAnniversary():promptAddPeriod()" class="text-text hover:opacity-50 transition-opacity"><i data-lucide="plus" class="w-5 h-5 stroke-1"></i></button>
                 </header>
+                
+                <main class="flex-1 overflow-y-auto p-6 space-y-8 pb-24">
+                    <!-- 岁时铭记 -->
+                    <div v-if="timelineTab === 'anni'" class="space-y-6 max-w-sm mx-auto">
+                        <div v-for="anni in sortedAnniversaries" :key="anni.id" class="border border-border p-6 relative group flex flex-col bg-bg">
+                            <button @click="removeAnniversary(anni.id)" class="absolute top-4 right-4 text-gray hover:text-text opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="x" class="w-3.5 h-3.5 stroke-1"></i></button>
+                            <input v-model="anni.name" @blur="debouncedSave" placeholder="名目..." class="bg-transparent text-[14px] mb-8 tracking-[0.3em] w-[80%] text-text font-light border-b border-transparent focus:border-border transition-colors">
+                            <div class="flex items-end justify-between relative">
+                                <div class="relative">
+                                    <span class="text-[10px] text-gray tracking-[0.1em] font-sans border-b border-border pb-1 block w-24">{{ anni.date.replace(/-/g, '.') }}</span>
+                                    <input type="date" v-model="anni.date" @change="debouncedSave">
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-[9px] text-gray tracking-[0.3em] mr-2 align-text-bottom">{{ getAnniDays(anni.date) >= 0 ? '余' : '过' }}</span>
+                                    <span class="text-3xl font-light text-text font-sans">{{ Math.abs(getAnniDays(anni.date)) }}</span>
+                                    <span class="text-[9px] text-gray tracking-widest ml-1 align-text-bottom">日</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="anniversaries.length === 0" class="text-[10px] text-gray text-center mt-32 tracking-[0.8em] font-light">无痕</div>
+                    </div>
 
-                <main class="flex-1 overflow-y-auto p-6 space-y-10 pb-20">
+                    <!-- 天葵志 -->
+                    <div v-if="timelineTab === 'period'" class="max-w-sm mx-auto flex flex-col h-full">
+                        <div class="flex justify-around items-center py-8 border-b border-border shrink-0">
+                            <div class="text-center">
+                                <div class="text-4xl font-light text-text font-sans mb-2">{{ periodDaysSince }}</div>
+                                <div class="text-[9px] text-gray tracking-[0.3em] font-light">上期至今(日)</div>
+                            </div>
+                            <div class="w-px h-10 bg-border"></div>
+                            <div class="text-center">
+                                <div class="text-4xl font-light text-text font-sans mb-2">{{ periodAvgDays }}</div>
+                                <div class="text-[9px] text-gray tracking-[0.3em] font-light">平均间隔(日)</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto pt-6 relative">
+                            <div class="absolute left-[20px] top-6 bottom-0 w-px bg-border"></div>
+                            <div v-for="(p, i) in sortedPeriods" :key="p.id" class="flex items-center mb-8 relative group pl-[44px]">
+                                <div class="absolute left-[17px] w-2 h-2 bg-bg border border-text rounded-full mt-0.5"></div>
+                                <div class="flex-1 flex justify-between items-center bg-bg border border-border p-4 hover:border-gray transition-colors">
+                                    <div class="relative w-24">
+                                        <span class="text-[12px] tracking-[0.1em] font-sans text-text">{{ p.date.replace(/-/g, '.') }}</span>
+                                        <input type="date" v-model="p.date" @change="debouncedSave">
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <span v-if="i < sortedPeriods.length - 1" class="text-[9px] text-gray tracking-[0.2em] font-light">隔 {{ getPeriodGap(sortedPeriods[i].date, sortedPeriods[i+1].date) }}</span>
+                                        <button @click="removePeriod(p.id)" class="text-gray hover:text-text opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="x" class="w-3.5 h-3.5 stroke-1"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-if="periods.length === 0" class="text-[10px] text-gray text-center mt-20 tracking-[0.8em] font-light ml-8">无痕</div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </transition>
+
+        <!-- 岁时风物 -->
+        <transition name="fade">
+            <div v-show="currentView === 'aesthetic'" class="absolute inset-0 flex flex-col z-20 bg-bg">
+                <header class="h-16 flex items-center justify-between px-5 border-b border-border shrink-0">
+                    <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity"><i data-lucide="chevron-left" class="w-5 h-5 stroke-1"></i></button>
+                    <span class="text-[13px] tracking-[0.4em] font-light">岁时风物</span>
+                    <div class="w-5"></div>
+                </header>
+                <main class="flex-1 overflow-y-auto p-8 space-y-16 pb-24">
                     
                     <section>
-                        <h3 class="text-[12px] text-gray tracking-[0.2em] border-b border-border pb-2 mb-4">卷面</h3>
-                        <div class="space-y-6 text-[13px]">
-                            <div class="flex justify-between items-center">
-                                <span class="tracking-widest">顺应天时</span>
-                                <input type="checkbox" v-model="settings.autoDarkMode" class="mag-checkbox">
+                        <h3 class="text-[10px] text-gray tracking-[0.5em] border-b border-border pb-4 mb-6 font-light">画壁</h3>
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            <div @click="settings.chatBgImg = ''" class="aspect-[9/16] border cursor-pointer flex items-center justify-center transition-all duration-500" :class="!settings.chatBgImg ? 'border-text bg-border/10' : 'border-border text-gray'">
+                                <span class="text-[10px] tracking-[0.4em] font-light" :class="!settings.chatBgImg?'text-text':'text-gray'">无尘</span>
                             </div>
-                            <div class="flex justify-between items-center" :class="{'opacity-40': settings.autoDarkMode}">
-                                <span class="tracking-widest">长夜模式</span>
-                                <input type="checkbox" v-model="settings.darkMode" :disabled="settings.autoDarkMode" class="mag-checkbox">
+                            <div v-for="(bg, idx) in settings.customBgs" :key="idx" @click="settings.chatBgImg = bg" 
+                                 class="aspect-[9/16] border cursor-pointer relative overflow-hidden group transition-all duration-500"
+                                 :class="settings.chatBgImg === bg ? 'border-text p-[2px]' : 'border-border hover:border-gray'">
+                                <img :src="bg" class="w-full h-full object-cover">
+                                <button @click.stop="removeCustomBg(idx)" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-bg bg-text/50 rounded-none p-1 transition-opacity backdrop-blur-sm"><i data-lucide="x" class="w-3 h-3 stroke-1"></i></button>
                             </div>
-                            <div class="flex justify-between items-center">
-                                <span class="tracking-widest">展露真容</span>
-                                <input type="checkbox" v-model="settings.showAvatar" class="mag-checkbox">
+                        </div>
+                        <label class="block text-center border border-border py-4 text-[10px] tracking-[0.5em] text-gray hover:text-text hover:border-gray cursor-pointer transition-colors font-light">
+                            悬挂新卷
+                            <input type="file" accept="image/*" @change="e => handleImgUpload(e, 'bg')" class="hidden">
+                        </label>
+                    </section>
+
+                    <section>
+                        <h3 class="text-[10px] text-gray tracking-[0.5em] border-b border-border pb-4 mb-6 font-light">字形</h3>
+                        <div class="space-y-6 text-[11px] font-light">
+                            <div class="flex items-end justify-between border-b border-border pb-2 focus-within:border-text transition-colors">
+                                <span class="tracking-[0.3em] text-gray mb-1">外链网络字体</span>
+                                <input v-model="settings.customFontUrl" placeholder="留空" class="w-2/3 bg-transparent text-right focus:outline-none tracking-widest font-sans">
                             </div>
-                            <div class="flex justify-between items-center">
-                                <span class="tracking-widest">铭记名讳</span>
-                                <input type="checkbox" v-model="settings.showName" class="mag-checkbox">
+                            <div class="flex items-end justify-between border-b border-border pb-2 focus-within:border-text transition-colors">
+                                <span class="tracking-[0.3em] text-gray mb-1">字体呼唤标识</span>
+                                <input v-model="settings.customFontName" placeholder="如 CustomFont" class="w-2/3 bg-transparent text-right focus:outline-none tracking-widest font-sans">
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="text-[10px] text-gray tracking-[0.5em] border-b border-border pb-4 mb-6 font-light">气泡塑形</h3>
+                        <textarea v-model="settings.customBubbleCss" rows="4" placeholder="/* 注入魂理 雕琢气泡 */&#10;.message { border-radius: 10px; }" class="w-full bg-transparent border border-border p-5 text-[10px] focus:border-text transition-colors resize-none mb-2 font-mono outline-none tracking-widest leading-loose"></textarea>
+                    </section>
+                </main>
+            </div>
+        </transition>
+
+        <!-- 洞察秋毫 -->
+        <transition name="fade">
+            <div v-show="currentView === 'insight'" class="absolute inset-0 flex flex-col z-20 bg-bg">
+                <header class="h-16 flex items-center justify-between px-5 border-b border-border shrink-0">
+                    <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity"><i data-lucide="chevron-left" class="w-5 h-5 stroke-1"></i></button>
+                    <span class="text-[13px] tracking-[0.4em] font-light">洞察秋毫</span>
+                    <div class="w-5"></div>
+                </header>
+                <main class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 bg-bg pb-12">
+                    
+                    <div class="border border-border p-8 flex flex-col justify-center items-center h-48 relative overflow-hidden">
+                        <svg class="absolute -right-10 -bottom-10 w-48 h-48 text-border opacity-30 stroke-[0.5] fill-none" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/><circle cx="50" cy="50" r="20"/></svg>
+                        <span class="text-[10px] tracking-[0.8em] text-gray mb-6 z-10 font-light ml-2">立卷总计</span>
+                        <span class="text-7xl font-light text-text font-sans z-10">{{ messages.length }}</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="border border-border p-6 flex flex-col items-center justify-center h-36">
+                            <span class="text-[10px] tracking-[0.4em] text-gray mb-4 font-light">落墨总字</span>
+                            <span class="text-3xl font-light text-text font-sans">{{ statData.totalChars }}</span>
+                        </div>
+                        <div class="border border-border p-6 flex flex-col items-center justify-center h-36">
+                            <span class="text-[10px] tracking-[0.4em] text-gray mb-4 font-light">深宵长谈</span>
+                            <span class="text-2xl font-light text-text font-sans tracking-widest">{{ statData.latestNightHour || '--:--' }}</span>
+                        </div>
+                    </div>
+
+                    <div class="border border-border p-8 flex flex-col mt-2">
+                        <span class="text-[10px] tracking-[0.5em] text-gray border-b border-border pb-5 mb-6 font-light">高频言辞</span>
+                        <div class="grid grid-cols-2 gap-8">
+                            <div>
+                                <span class="text-[9px] text-gray tracking-[0.4em] block mb-4 opacity-60">吾之常言</span>
+                                <div class="space-y-4">
+                                    <div v-for="(word, idx) in statData.topWordsMe" :key="idx" class="flex justify-between items-center text-[11px] tracking-widest font-light">
+                                        <span class="text-text max-w-[80px] truncate" :title="word.w">{{ word.w }}</span>
+                                        <span class="text-gray text-[9px] font-sans">{{ word.c }}</span>
+                                    </div>
+                                    <div v-if="!statData.topWordsMe.length" class="text-[9px] text-gray">无</div>
+                                </div>
                             </div>
                             <div>
-                                <div class="flex justify-between mb-3"><span class="tracking-widest">墨迹粗细</span><span class="text-[11px] text-gray">{{settings.fontSize}}</span></div>
-                                <input type="range" v-model.number="settings.fontSize" min="12" max="22" class="w-full accent-text h-1 bg-border rounded-none appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-text">
+                                <span class="text-[9px] text-gray tracking-[0.4em] block mb-4 opacity-60">客之常言</span>
+                                <div class="space-y-4">
+                                    <div v-for="(word, idx) in statData.topWordsThem" :key="idx" class="flex justify-between items-center text-[11px] tracking-widest font-light">
+                                        <span class="text-text max-w-[80px] truncate" :title="word.w">{{ word.w }}</span>
+                                        <span class="text-gray text-[9px] font-sans">{{ word.c }}</span>
+                                    </div>
+                                    <div v-if="!statData.topWordsThem.length" class="text-[9px] text-gray">无</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 text-center">
+                        <span class="text-[9px] text-gray tracking-[0.5em] font-light">结缘于 {{ statData.firstTime }}</span>
+                    </div>
+                </main>
+            </div>
+        </transition>
+
+        <!-- 万象法则 -->
+        <transition name="fade">
+            <div v-show="currentView === 'settings'" class="absolute inset-0 flex flex-col z-20 bg-bg">
+                <header class="h-16 flex items-center justify-between px-5 border-b border-border shrink-0">
+                    <button @click="switchView('home')" class="text-text hover:opacity-50 transition-opacity"><i data-lucide="chevron-left" class="w-5 h-5 stroke-1"></i></button>
+                    <span class="text-[13px] tracking-[0.4em] font-light">万象法则</span>
+                    <div class="w-5"></div>
+                </header>
+
+                <main class="flex-1 overflow-y-auto p-8 space-y-14 pb-24">
+                    
+                    <section>
+                        <h3 class="text-[10px] text-gray tracking-[0.5em] border-b border-border pb-4 mb-6 font-light">卷面</h3>
+                        <div class="space-y-7 text-[11px] font-light">
+                            <div class="flex justify-between items-center group">
+                                <span class="tracking-[0.4em] text-gray group-hover:text-text transition-colors">天时</span>
+                                <input type="checkbox" v-model="settings.autoDarkMode" class="mag-checkbox">
+                            </div>
+                            <div class="flex justify-between items-center group" :class="{'opacity-30 pointer-events-none': settings.autoDarkMode}">
+                                <span class="tracking-[0.4em] text-gray group-hover:text-text transition-colors">长夜</span>
+                                <input type="checkbox" v-model="settings.darkMode" class="mag-checkbox">
+                            </div>
+                            <div class="flex justify-between items-center group">
+                                <span class="tracking-[0.4em] text-gray group-hover:text-text transition-colors">显露真容</span>
+                                <input type="checkbox" v-model="settings.showAvatar" class="mag-checkbox">
+                            </div>
+                            <div class="flex justify-between items-center group">
+                                <span class="tracking-[0.4em] text-gray group-hover:text-text transition-colors">呼唤名讳</span>
+                                <input type="checkbox" v-model="settings.showName" class="mag-checkbox">
+                            </div>
+                            <div class="pt-4">
+                                <div class="flex justify-between mb-4"><span class="tracking-[0.4em] text-gray">墨迹</span><span class="text-[10px] text-gray font-sans">{{settings.fontSize}}</span></div>
+                                <input type="range" v-model.number="settings.fontSize" min="12" max="22" class="w-full accent-text h-[1px] bg-border appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-text [&::-webkit-slider-thumb]:rounded-sm cursor-pointer">
                             </div>
                         </div>
                     </section>
 
                     <section>
-                        <h3 class="text-[12px] text-gray tracking-[0.2em] border-b border-border pb-2 mb-4">交互</h3>
-                        <div class="space-y-6 text-[13px]">
-                            <div class="flex justify-between items-center">
-                                <span class="tracking-widest">敲击回声</span>
+                        <h3 class="text-[10px] text-gray tracking-[0.5em] border-b border-border pb-4 mb-6 font-light">交互</h3>
+                        <div class="space-y-7 text-[11px] font-light">
+                            <div class="flex justify-between items-center group">
+                                <span class="tracking-[0.4em] text-gray group-hover:text-text transition-colors">回声</span>
                                 <input type="checkbox" v-model="settings.soundEnabled" class="mag-checkbox">
                             </div>
-                            <div class="flex justify-between items-center">
-                                <span class="tracking-widest">飞鸽惊铃</span>
+                            <div class="flex justify-between items-center group">
+                                <span class="tracking-[0.4em] text-gray group-hover:text-text transition-colors">惊铃</span>
                                 <input type="checkbox" v-model="settings.notification" @change="reqNotification" class="mag-checkbox">
                             </div>
-                            <div class="flex justify-between items-center">
-                                <span class="tracking-widest block">客方斟酌迟疑 (落笔延时)</span>
-                                <select v-model="settings.replyDelay" class="bg-transparent border-b border-text pb-1 text-[12px] text-right focus:outline-none">
-                                    <option value="fast">瞬息 (1-2秒)</option>
-                                    <option value="normal">思忖 (3-5秒)</option>
-                                    <option value="slow">斟酌 (5-10秒)</option>
-                                </select>
+                            <div class="flex justify-between items-center group">
+                                <span class="tracking-[0.4em] text-gray group-hover:text-text transition-colors">客阅无言</span>
+                                <input type="checkbox" v-model="settings.readButNoReply" class="mag-checkbox">
                             </div>
-                            <div class="flex justify-between items-center">
-                                <span class="tracking-widest block">客方主动问候频次</span>
-                                <select v-model.number="settings.autoReplyInterval" class="bg-transparent border-b border-text pb-1 text-[12px] text-right focus:outline-none">
-                                    <option value="0">从不</option>
-                                    <option value="1">片刻 (1分)</option>
-                                    <option value="5">茶歇 (5分)</option>
-                                    <option value="30">半个时辰 (30分)</option>
-                                </select>
+                            <div class="flex justify-between items-center group">
+                                <span class="tracking-[0.4em] text-gray group-hover:text-text transition-colors">辞藻交织</span>
+                                <input type="checkbox" v-model="settings.combineReplies" class="mag-checkbox">
+                            </div>
+                            <div class="flex items-end justify-between border-b border-border pb-2 focus-within:border-text transition-colors mt-8">
+                                <span class="tracking-[0.4em] text-gray mb-1">寄言间隔</span>
+                                <input type="number" v-model.number="settings.autoReplyInterval" class="w-16 bg-transparent text-right focus:outline-none font-sans text-text">
+                            </div>
+                            <div class="flex items-end justify-between border-b border-border pb-2 focus-within:border-text transition-colors">
+                                <span class="tracking-[0.4em] text-gray mb-1">斟酌延迟</span>
+                                <input type="number" v-model.number="settings.replyDelay" class="w-16 bg-transparent text-right focus:outline-none font-sans text-text">
                             </div>
                         </div>
                     </section>
 
                     <section>
-                        <h3 class="text-[12px] text-gray tracking-[0.2em] border-b border-border pb-2 mb-4">典藏</h3>
+                        <h3 class="text-[10px] text-gray tracking-[0.5em] border-b border-border pb-4 mb-6 font-light">典藏全宗</h3>
                         <div class="space-y-4">
-                            <button @click="exportAllData" class="w-full py-3 border border-border text-text hover:bg-border transition-colors tracking-widest text-[12px]">
+                            <button @click="exportAllData" class="w-full py-4 border border-border text-gray hover:border-text hover:text-text transition-colors tracking-[0.5em] text-[10px] font-light">
                                 拓印全卷
                             </button>
-                            <label class="w-full py-3 border border-border text-text hover:bg-border transition-colors tracking-widest text-[12px] flex justify-center cursor-pointer">
+                            <label class="w-full py-4 border border-border text-gray hover:border-text hover:text-text transition-colors tracking-[0.5em] text-[10px] font-light flex justify-center cursor-pointer">
                                 纳藏旧卷
                                 <input type="file" accept=".json" class="hidden" @change="importAllData">
                             </label>
-                            <button @click="clearData" class="w-full py-3 border border-text bg-text text-bg hover:opacity-80 transition-colors tracking-widest text-[12px] mt-4">
+                            <button @click="clearData" class="w-full py-4 border border-border text-gray hover:border-text hover:text-text transition-colors tracking-[0.5em] text-[10px] font-light mt-4">
                                 付之一炬
                             </button>
                         </div>
@@ -519,36 +636,32 @@
             </div>
         </transition>
 
-        <!-- 隐藏渲染区：长图生成用，采用标准流布局防错位 -->
-        <div id="hidden-capture-area" style="padding: 40px 20px; background: var(--color-bg); width: 414px; box-sizing: border-box; color: var(--color-text); font-family: var(--font-family);">
-            <div v-for="msg in selectedCaptureMsgs" :key="'cap-'+msg.id" style="margin-bottom: 24px; clear: both; overflow: hidden;">
-                
-                <!-- 对方消息：左浮动 -->
-                <div v-if="msg.sender === 'them'" style="float: left; width: 100%;">
-                    <div v-if="settings.showAvatar" style="float: left; width: 36px; height: 36px; border-radius: 4px; overflow: hidden; border: 1px solid var(--color-border); margin-right: 12px; background: var(--color-bg); text-align: center; line-height: 36px; font-size: 14px;">
-                        <img v-if="profiles.them.avatar" :src="profiles.them.avatar" style="width: 100%; height: 100%; object-fit: cover;">
-                        <span v-else>{{ profiles.them.name.charAt(0) }}</span>
+        <!-- 群组结界 -->
+        <transition name="fade">
+            <div v-if="showGroupDrawer" class="fixed inset-0 z-50 glass-mask flex flex-col justify-end" @click.self="showGroupDrawer=false">
+                <div class="bg-bg h-[70vh] border-t border-border flex flex-col rounded-t-sm shadow-2xl transition-transform" @click.stop>
+                    <header class="h-16 flex items-center justify-between px-6 border-b border-border shrink-0">
+                        <span class="text-[13px] tracking-[0.4em] font-light">众生结缘</span>
+                        <button @click="showGroupDrawer=false" class="text-text hover:opacity-50"><i data-lucide="chevron-down" class="w-5 h-5 stroke-1"></i></button>
+                    </header>
+                    <div class="p-6 border-b border-border flex justify-between items-center shrink-0">
+                        <span class="text-[11px] tracking-[0.3em] text-gray font-light">开启群聚</span>
+                        <input type="checkbox" v-model="chatState.isGroupMode" @change="debouncedSave" class="mag-checkbox">
                     </div>
-                    <div style="float: left; max-width: 260px;">
-                        <div v-if="settings.showName" style="font-size: 10px; color: var(--color-gray); margin-bottom: 6px; letter-spacing: 1px;">{{ profiles.them.name }}</div>
-                        <div style="padding: 10px 14px; border-radius: 4px; line-height: 1.6; word-break: break-word; background: #FFFFFF; color: #111; border: 1px solid var(--color-border);" :style="{ fontSize: settings.fontSize + 'px', background: settings.darkMode?'#111':'#FFF', color: settings.darkMode?'#EEE':'#111', borderColor: settings.darkMode?'#333':'#E5E5E5' }" v-html="msg.content"></div>
-                    </div>
-                </div>
-
-                <!-- 我方消息：右浮动 -->
-                <div v-else style="float: right; width: 100%; text-align: right;">
-                    <div v-if="settings.showAvatar" style="float: right; width: 36px; height: 36px; border-radius: 4px; overflow: hidden; border: 1px solid var(--color-border); margin-left: 12px; background: var(--color-bg); text-align: center; line-height: 36px; font-size: 14px;">
-                        <img v-if="profiles.me.avatar" :src="profiles.me.avatar" style="width: 100%; height: 100%; object-fit: cover;">
-                        <span v-else>{{ profiles.me.name.charAt(0) }}</span>
-                    </div>
-                    <div style="float: right; max-width: 260px; text-align: left;">
-                        <div v-if="settings.showName" style="font-size: 10px; color: var(--color-gray); margin-bottom: 6px; letter-spacing: 1px; text-align: right;">{{ profiles.me.name }}</div>
-                        <div style="padding: 10px 14px; border-radius: 4px; line-height: 1.6; word-break: break-word; background: #F0F0F0; color: #111;" :style="{ fontSize: settings.fontSize + 'px', background: settings.darkMode?'#2A2A2A':'#F0F0F0', color: settings.darkMode?'#EEE':'#111' }" v-html="msg.content"></div>
+                    <div class="flex-1 overflow-y-auto p-6 space-y-6" :class="{'opacity-30 pointer-events-none': !chatState.isGroupMode}">
+                        <div v-for="member in chatState.groupMembers" :key="member.id" class="flex items-center gap-5 border border-border p-4 relative group hover:border-gray transition-colors">
+                            <div class="w-10 h-10 border border-border overflow-hidden flex items-center justify-center cursor-pointer shrink-0" @click="editGroupMember(member)">
+                                <img v-if="member.avatar" :src="member.avatar" class="w-full h-full object-cover">
+                                <span v-else class="text-[12px] text-gray font-light">{{ member.name.charAt(0) }}</span>
+                            </div>
+                            <input v-model="member.name" @blur="debouncedSave" class="flex-1 bg-transparent border-b border-transparent focus:border-border text-[13px] tracking-widest text-text font-light">
+                            <button @click="removeGroupMember(member.id)" class="text-gray hover:text-text opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="x" class="w-4 h-4 stroke-1"></i></button>
+                        </div>
+                        <button @click="addGroupMember" class="w-full py-5 border border-border text-gray text-[10px] tracking-[0.5em] hover:text-text hover:border-text transition-colors font-light">迎客</button>
                     </div>
                 </div>
-
             </div>
-        </div>
+        </transition>
 
     </div>
 </div>
@@ -557,61 +670,72 @@
 const { createApp, ref, reactive, computed, watch, nextTick, onMounted } = Vue;
 const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 
+// 雅音名录 (压缩注入)
+const defaultSongs = [{"title":"ANSWER","sub":"들리니 I'm callin' you","url":"https://files.catbox.moe/hzpr94.mp3","isCustom":true},{"title":"All I Have Is Love","sub":"Feel the beating of my heart","url":"http://music.163.com/song/media/outer/url?id=1940368.mp3","isCustom":true},{"title":"第三个吻痕","sub":"非要做 贪心的坏人","url":"https://img.heliar.top/file/1773902740144_下载您的文件_—_Convertio_1425997963.mp3","isCustom":true},{"title":"小半","sub":"我的心借了你的光是明是暗","url":"https://img.heliar.top/file/1772964128402_陈粒_-_小半.mp3","isCustom":true},{"title":"当你","sub":"好喜欢你 知不知道","url":"https://img.heliar.top/file/1772964503074_林俊杰_-_当你.mp3","isCustom":true},{"title":"恶作剧","sub":"我想我会开始想念你","url":"https://img.heliar.top/file/1772965264360_林依晨_-_恶作剧.mp3","isCustom":true},{"title":"孤单北半球","sub":"想念不会偷懒 我的梦通通给你保管","url":"https://img.heliar.top/file/1772963472128_林依晨_-_孤单北半球.mp3","isCustom":true},{"title":"_Dear_D__","sub":"好想好想在一起","url":"https://img.heliar.top/file/1772970137585_项睿娴_-_Dear_D__亲爱的告诉你_.mp3","isCustom":true},{"title":"初雪","sub":"바보 같은 난 아무 말 못해","url":"https://img.heliar.top/file/1773547905373_%EC%B2%AB_%EB%88%88__%E5%88%9D%E9%9B%AA_.m4a","isCustom":true},{"title":"My Love Mine All Mine","sub":"But my love mine all mine","url":"https://img.heliar.top/file/1773547910084_My_Love_Mine_All_Mine.m4a","isCustom":true},{"title":"Solitude","sub":"Can't you be here accompany my solitude Baby","url":"https://img.heliar.top/file/1773547910130_solitude.m4a","isCustom":true},{"title":"恋人","sub":"回忆里充满着罗曼蒂克的幻想","url":"https://img.heliar.top/file/1773544800453_%E6%81%8B%E4%BA%BA.m4a","isCustom":true},{"title":"First Snow","sub":"君だけが好きで ずっ好きで","url":"https://img.heliar.top/file/1773543103115_first_snow.mp3.m4a","isCustom":true},{"title":"我走以后","sub":"----","url":"http://music.163.com/song/media/outer/url?id=3347121761.mp3","isCustom":true},{"title":"偏爱","sub":"等你的依赖 对你的偏爱","url":"https://music.163.com/song/media/outer/url?id=5238992.mp3","isCustom":true},{"title":"A Faint Glow Of Life","sub":"你让我振作起来使我的世界熠熠生辉","url":"https://music.163.com/song/media/outer/url?id=2065544118.mp3","isCustom":true},{"title":"MoNo","sub":"----","url":"https://music.163.com/song/media/outer/url?id=1845553824.mp3","isCustom":true},{"title":"Half Blood Angel","sub":"我存在的意义难道是 在这糟糕的世界腐烂","url":"https://music.163.com/song/media/outer/url?id=2635248857.mp3","isCustom":true},{"title":"红颜","sub":"这一世英名我不要 只求换来红颜一笑","url":"https://img.heliar.top/file/1772752066038_红颜.mp3","isCustom":true},{"title":"永远永远","sub":"你爱过我就已足够 就算到了最后爱已搁浅","url":"https://files.catbox.moe/2lcm70.mp3","isCustom":true},{"title":"穿林响","sub":"天雷惊吼 风涌 竹影抖 长缨擎空 剑舞 宿命咒","url":"https://files.catbox.moe/nzg6zk.mp3","isCustom":true},{"title":"虚拟","sub":"你是我朝夕相伴触手可及的虚拟","url":"https://files.catbox.moe/6s65mp.mp3","isCustom":true},{"title":"多远都要在一起","sub":"爱能克服远距离","url":"https://files.catbox.moe/06k9ra.mp3","isCustom":true},{"title":"永不失联的爱","sub":"这一辈子都不想失联的爱","url":"https://files.catbox.moe/uvucav.mp3","isCustom":true},{"title":"稳稳的幸福","sub":"这是我想要的幸福","url":"https://files.catbox.moe/inb22a.mp3","isCustom":true},{"title":"有我呢","sub":"我会让你习惯 多一个人陪伴","url":"https://files.catbox.moe/hrazjt.mp3","isCustom":true},{"title":"一千零一夜","sub":"梦里能到达的地方啊 有一天脚步也能到达","url":"https://files.catbox.moe/syfuon.mp3","isCustom":true},{"title":"月亮与六便士","sub":"我的世界由你建立 因你崩塌","url":"https://files.catbox.moe/98quqc.mp3","isCustom":true},{"title":"次元恋人","sub":"约好了隔着次元也吻住泪眼","url":"https://files.catbox.moe/5u5dy0.mp3","isCustom":true},{"title":"阳光下的星星","sub":"如果爱上你只是一个梦境","url":"https://files.catbox.moe/dxgqsk.mp3","isCustom":true},{"title":"周边","sub":"灵魂里空缺的那段","url":"https://files.catbox.moe/a7k5wd.mp3","isCustom":true},{"title":"恋爱ing","sub":"让我重新认识L O V E","url":"https://files.catbox.moe/94slcd.mp3","isCustom":true},{"title":"一点一滴","sub":"你让爱一点一滴汇成河","url":"https://files.catbox.moe/958qzg.mp3","isCustom":true},{"title":"关键词","sub":"让我见识爱情可以慷慨又自私","url":"https://files.catbox.moe/9yl5ic.mp3","isCustom":true},{"title":"想见你想见你想见你","sub":"穿越了千个万个时间线里人海里相依","url":"https://files.catbox.moe/co58d7.mp3","isCustom":true},{"title":"star crossing night","sub":"这里没有你","url":"https://files.catbox.moe/i3f86b.mp3","isCustom":true},{"title":"sea temple","sub":"If we have each other","url":"https://files.catbox.moe/c57gxs.mp3","isCustom":true},{"title":"我想要占据你","sub":"占据你的⼀切且无可厚非","url":"https://files.catbox.moe/1fp6eg.mp3","isCustom":true},{"title":"特别的人","sub":"我们是对方特别的人","url":"https://files.catbox.moe/a0n0l7.mp3","isCustom":true},{"title":"麦恩莉","sub":"在广阔寂寞漩涡解脱","url":"https://files.catbox.moe/2inae2.mp3","isCustom":true},{"title":"会呼吸的痛","sub":"想念是会呼吸的痛","url":"https://files.catbox.moe/0uhmxr.mp3","isCustom":true},{"title":"一生的爱","sub":"我只想要给你我一生的爱","url":"https://files.catbox.moe/f0e93c.mp3","isCustom":true},{"title":"身骑白马","sub":"追赶要我爱的不保留","url":"https://files.catbox.moe/iywfe2.mp3","isCustom":true},{"title":"爱情讯息","sub":"想念变成空气在叹息","url":"https://files.catbox.moe/4dl0t2.mp3","isCustom":true},{"title":"你在 不在","sub":"你在我心里面 陪我失眠","url":"https://files.catbox.moe/povyqa.mp3","isCustom":true},{"title":"你是我的风景","sub":"爱让悬崖变平地","url":"https://files.catbox.moe/fnwtf8.mp3","isCustom":true},{"title":"life with u","sub":"Now I know that you're the one","url":"https://files.catbox.moe/zqfxvd.mp3","isCustom":true},{"title":"勾指起誓","sub":"你是理所当然的奇迹","url":"https://files.catbox.moe/4spgo5.mp3","isCustom":true},{"title":"牵一半","sub":"你的存在是我唯一依赖","url":"https://files.catbox.moe/bk21gu.mp3","isCustom":true},{"title":"rove","sub":"Oh we are in the War of Love on Rove","url":"https://files.catbox.moe/sfwsuk.mp3","isCustom":true},{"title":"唯一","sub":"我真的爱你 句句不轻易","url":"https://files.catbox.moe/69g4fe.mp3","isCustom":true},{"title":"致爱 Your Song","sub":"我只想每个落日 身边都有你","url":"https://files.catbox.moe/01bmnf.mp3","isCustom":true},{"title":"一首想不通的古风","sub":"画地为牢 画命为符 铸成下一世坚守","url":"https://files.catbox.moe/9b4lh7.mp3","isCustom":true},{"title":"茉莉雨","sub":"琴声里愁几许关于你","url":"https://files.catbox.moe/7ml83u.mp3","isCustom":true},{"title":"怎么唱情歌","sub":"海 变的苦涩 灼伤一片温柔","url":"https://files.catbox.moe/isqax9.mp3","isCustom":true},{"title":"岸边客","sub":"你回来我心未改 你不在我还等待","url":"https://files.catbox.moe/9oud6s.mp3","isCustom":true},{"title":"江南雪","sub":"相思再无药解 从此万般风月都是我心结","url":"https://files.catbox.moe/hhjwek.mp3","isCustom":true},{"title":"不死之身","sub":"我仍爱你爱得不知天高地厚","url":"https://files.catbox.moe/g960ev.mp3","isCustom":true},{"title":"我们的明天","sub":"爱从不曾保留 才勇敢了我","url":"https://files.catbox.moe/a3yjvv.mp3","isCustom":true},{"title":"难解","sub":"点炷高香敬予神明 被人嘲笑矢志不渝","url":"https://files.catbox.moe/1u8m3r.mp3","isCustom":true},{"title":"最好的我 & 50 Feet","sub":"试着伸手 却连你的影子我都无法靠近","url":"https://files.catbox.moe/clsiyi.mp3","isCustom":true},{"title":"同手同脚","sub":"也是存在在这个世界 唯一的唯一","url":"https://files.catbox.moe/b8hss3.mp3","isCustom":true},{"title":"同花顺","sub":"只要肯爱得深 是不是就有这可能","url":"https://files.catbox.moe/28mw5d.mp3","isCustom":true},{"title":"轻舞","sub":"轻舞吧 过往如裙纱","url":"https://files.catbox.moe/8n9lhi.mp3","isCustom":true},{"title":"绝对占有 相对自由","sub":"赞美你包容你都是我的使命","url":"https://files.catbox.moe/zi4gxo.mp3","isCustom":true},{"title":"千万次想象","sub":"我千万次想象 千万次模仿 思念的形状","url":"https://files.catbox.moe/4jtex8.mp3","isCustom":true},{"title":"辞家千里","sub":"穿过无人问津去见山海万顷","url":"https://files.catbox.moe/2quy44.mp3","isCustom":true},{"title":"Ryukyuvania","sub":"----","url":"https://files.catbox.moe/utmbqp.mp3","isCustom":true},{"title":"沦陷","sub":"圈它在黑暗中逃不出的梦魇","url":"https://files.catbox.moe/0bhl3i.mp3","isCustom":true},{"title": "晚枫歌","sub": "你又怎知我从未放手","url": "https://files.catbox.moe/xhwrwy.mp3","isCustom":true},{"title": "I Need U","sub": "I need you girl","url": "https://files.catbox.moe/v1k4h8.mp3","isCustom":true},{"title": "若梦","sub": "日升月落 此生依旧难舍","url": "https://files.catbox.moe/6uysqy.mp3","isCustom":true},{"title": "爱人","sub": "可是恨的人没死成 爱的人没可能","url": "https://files.catbox.moe/wtbdxe.mp3","isCustom":true},{"title": "星河叹","sub": "我盼孤身纵马 笛声漫天 四海任我游","url": "https://files.catbox.moe/de7g2m.mp3","isCustom":true},{"title": "爱殇","sub": "假欢畅 又何妨 无人共享","url": "https://files.catbox.moe/or2hm7.mp3","isCustom":true},{"title": "Una mattina","sub": "----","url": "https://files.catbox.moe/nf8o90.mp3","isCustom":true},{"title": "顺其自然","sub": "You light up my heart","url": "https://files.catbox.moe/na01cn.mp3","isCustom":true},{"title": "初见","sub": "若如初见 为谁而归","url": "https://files.catbox.moe/bumolx.mp3","isCustom":true},{"title": "我好像在哪见过你","sub": "人们把难言的爱都埋入土壤里","url": "https://files.catbox.moe/vcidpc.mp3","isCustom":true},{"title": "别回头","sub": "爱是年少时不堪其重 渗透灵魂的一阵剧痛","url": "https://files.catbox.moe/h1hwo5.mp3","isCustom":true},{"title": "大鱼","sub": "怕你飞远去 怕你离我而去","url": "https://files.catbox.moe/jlcvkg.mp3","isCustom":true},{"title": "人鱼的眼泪","sub": "Baby Don't cry","url": "https://files.catbox.moe/40fm4j.mp3","isCustom":true},{"title": "九张机","sub": "我愿化作望断天涯那一方青石","url": "https://files.catbox.moe/hql6w5.mp3","isCustom":true},{"title": "梦幻诛仙","sub": "来世若再会还与你双双对对","url": "https://files.catbox.moe/r6btwp.mp3","isCustom":true},{"title": "寻常歌","sub": "所幸不过是 寻常人间事","url": "https://files.catbox.moe/ntcqvr.mp3","isCustom":true},{"title": "公示情书","sub": "有种微妙确定的幸福 叫对方正在输入","url": "https://files.catbox.moe/rptwer.mp3","isCustom":true},{"title": "现在那边是几点","sub": "请问你现在那边是几点 会不会还放有我的照片","url": "https://files.catbox.moe/icv2aa.mp3","isCustom":true},{"title": "情人","sub": "气氛开始升温 危险又迷人","url": "https://files.catbox.moe/iqairg.mp3","isCustom":true},{"title": "怜悯","sub": "我要带着爱意着恨你","url": "https://files.catbox.moe/242a1h.mp3","isCustom":true},{"title": "疑心病","sub": "你终于说出口你对我感情也很重","url": "https://files.catbox.moe/jc1umm.mp3","isCustom":true},{"title": "诀爱","sub": "若灵魂相结在天地之间","url": "https://files.catbox.moe/quqaws.mp3","isCustom":true},{"title": "彼岸","sub": "她捧起镜花水月 一刹那湮灭","url": "https://files.catbox.moe/zxepep.mp3","isCustom":true},{"title": "问情","sub": "当爱恨如潮生多残忍","url": "https://files.catbox.moe/erds0n.mp3","isCustom":true},{"title": "同进退","sub": "我会牵着你手同进退 佛前立誓不后悔","url": "https://files.catbox.moe/vb6chf.mp3","isCustom":true},{"title": "招摇","sub": "一句此生不换","url": "https://files.catbox.moe/oc86ih.mp3","isCustom":true},{"title": "你要的全拿走","sub": "好聚好散听着也楚楚可怜","url": "https://files.catbox.moe/ok2e3s.mp3","isCustom":true},{"title": "云裳羽衣曲","sub": "故事鲜艳而缘分却太浅","url": "https://files.catbox.moe/njnbhv.mp3","isCustom":true},{"title": "大梦归离","sub": "终于听风儿说 知道你在哪里","url": "https://files.catbox.moe/5z67vs.mp3","isCustom":true},{"title": "偏向","sub": "为何会两败俱伤","url": "https://files.catbox.moe/i37f39.mp3","isCustom":true},{"title": "Love me like you do","sub": "You're the only thing I wanna touch","url": "https://files.catbox.moe/arym0i.mp3","isCustom":true},{"title": "Not snow,but U","sub": "我期待的不是雪而是有你的冬天","url": "https://files.catbox.moe/6rk4gw.mp3","isCustom":true},{"title": "The Evergreen","sub": "我恍然明了我所需的一切已尽数摆在眼前","url": "https://files.catbox.moe/ca3rim.mp3","isCustom":true},{"title": "冥河螺旋","sub": "我如此希望 我伴你左右","url": "https://files.catbox.moe/xtj8db.mp3","isCustom":true},{"title": "熄灭","sub": "你总问我在一起会不会感到厌倦","url": "https://files.catbox.moe/wnzxou.mp3","isCustom":true},{"title": "爱人错过","sub": "我肯定在几百年前就说过爱你","url": "https://files.catbox.moe/q2nx16.mp3","isCustom":true},{"title": "我想念","sub": "我想念你说过的那种永远","url": "https://files.catbox.moe/3qxads.mp3","isCustom":true},{"title": "此生不换","sub": "再有一万年深情也不变","url": "https://files.catbox.moe/72ik88.mp3","isCustom":true},{"title": "鳥の詩","sub": "----","url": "https://files.catbox.moe/966u00.mp3","isCustom":true}];
+
 createApp({
     setup() {
         const appState = reactive({ showIntro: true, introFading: false });
         const currentView = ref('home');
         const unreadCount = ref(0);
+        const toast = ref({ show: false, msg: '' });
         
+        const homeMenus = [
+            { name: '飞鸽传书', view: 'chat', icon: 'feather' },
+            { name: '藏经卷宗', view: 'library', icon: 'scroll-text' },
+            { name: '流年印记', view: 'timeline', icon: 'hourglass' },
+            { name: '岁时风物', view: 'aesthetic', icon: 'image' },
+            { name: '洞察秋毫', view: 'insight', icon: 'eye' },
+            { name: '万象法则', view: 'settings', icon: 'sliders-horizontal' }
+        ];
+
         const messages = ref([]);
         const inputText = ref('');
         const isTyping = ref(false);
 
         const profiles = reactive({ me: { name: '吾', avatar: '' }, them: { name: '客', avatar: '' } });
         const settings = reactive({ 
-            darkMode: false, autoDarkMode: true, chatBgImg: '',
+            darkMode: false, autoDarkMode: true, chatBgImg: '', customBgs: [], customBubbleCss: '',
             showAvatar: true, showName: false, avatarRadius: 0, 
-            soundEnabled: true, notification: false, autoReplyInterval: 0, replyDelay: 'normal',
-            customFontUrl: '', customFontName: '', fontSize: 14
+            soundEnabled: true, notification: false, autoReplyInterval: 0, replyDelay: 3,
+            customFontUrl: '', customFontName: '', fontSize: 13,
+            readButNoReply: false, combineReplies: false
         });
 
-        const presetBgs = [
-            { url: '' }, // 无
-            { url: 'https://images.unsplash.com/photo-1615563821038-f9389e771d93?q=80&w=600&auto=format&fit=crop' }, // 宣纸纹理
-            { url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=600&auto=format&fit=crop' }, // 渐变浅素
-            { url: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=600&auto=format&fit=crop' }  // 墨色山水感
-        ];
+        const chatState = reactive({ isSearching: false, keyword: '', results: [], currentIdx: 0, isGroupMode: false, groupMembers: [] });
+        const showGroupDrawer = ref(false);
 
+        // Music Player Logic
+        const audio = ref(null);
+        const playlist = ref([]);
+        const showPlaylist = ref(false);
+        const musicState = reactive({ minimized: true, x: 20, y: 100, mode: 0, currentIndex: 0 }); // mode: 0=seq, 1=rand, 2=loop
+        const currentSong = computed(() => playlist.value[musicState.currentIndex] || {});
+        let dragInfo = { isDragging: false, startX: 0, startY: 0, initialX: 0, initialY: 0 };
+
+        const timelineTab = ref('anni');
         const anniversaries = ref([]);
+        const periods = ref([]);
 
-        const replyGroups = ref([{ id: genId(), name: '初篇', replies: [{ id: genId(), text: '静水流深。', enabled: true }] }]);
+        const replyGroups = ref([{ id: genId(), name: '初卷', replies: [{ id: genId(), text: '静水流深。', enabled: true }] }]);
         const currentGroupId = ref('');
         const currentGroup = computed(() => replyGroups.value.find(g => g.id === currentGroupId.value));
 
         const libSearch = ref('');
         const batchSelectMode = ref(false);
         const selectedLibIds = ref([]);
-        const filteredReplies = computed(() => {
-            if(!currentGroup.value) return [];
-            const k = libSearch.value.trim();
-            if(!k) return currentGroup.value.replies;
-            return currentGroup.value.replies.filter(r => r.text.includes(k));
-        });
+        const filteredReplies = computed(() => { if(!currentGroup.value) return []; const k = libSearch.value.trim(); if(!k) return currentGroup.value.replies; return currentGroup.value.replies.filter(r => r.text.includes(k)); });
 
-        const captureMode = ref(false);
-        const selectedCaptureMsgs = ref([]);
-        const chatState = reactive({ isSearching: false, keyword: '', results: [], currentIdx: 0 });
+        const modal = reactive({ show: false, type: '', title: '', message: '', input: '', placeholder: '', options: [], profileData: {}, songData: {}, onConfirm: null });
 
-        const modal = reactive({ show: false, type: '', title: '', message: '', input: '', placeholder: '', profileData: {}, onConfirm: null });
+        const STORAGE_KEY = 'liubai_v9_data';
+        let saveTimeout = null; let audioCtx = null; let sortableInst = null; let activeReplyTimer = null;
 
-        const STORAGE_KEY = 'liubai_v6_data';
-        let saveTimeout = null;
-        let audioCtx = null;
-        let sortableInst = null;
-        let activeReplyTimer = null;
+        const showToast = (msg) => { toast.value = { show: true, msg }; vibrate(); setTimeout(() => toast.value.show = false, 3000); };
+        const vibrate = () => { if (navigator.vibrate) navigator.vibrate(20); };
 
         const initData = async () => {
-            localforage.config({ name: 'LiuBaiApp', storeName: 'v6' });
+            localforage.config({ name: 'LiuBaiApp', storeName: 'v9' });
             const stored = await localforage.getItem(STORAGE_KEY);
             if (stored) {
                 if(stored.messages) messages.value = stored.messages;
@@ -619,235 +743,227 @@ createApp({
                 if(stored.settings) Object.assign(settings, { ...settings, ...stored.settings });
                 if(stored.replyGroups) { replyGroups.value = stored.replyGroups; currentGroupId.value = replyGroups.value[0]?.id; }
                 if(stored.anniversaries) anniversaries.value = stored.anniversaries;
-            } else { currentGroupId.value = replyGroups.value[0]?.id; }
+                if(stored.periods) periods.value = stored.periods;
+                if(stored.chatState) { chatState.isGroupMode = stored.chatState.isGroupMode || false; chatState.groupMembers = stored.chatState.groupMembers || []; }
+                if(stored.playlist && stored.playlist.length > 0) playlist.value = stored.playlist;
+                else playlist.value = JSON.parse(JSON.stringify(defaultSongs));
+            } else { 
+                currentGroupId.value = replyGroups.value[0]?.id; 
+                playlist.value = JSON.parse(JSON.stringify(defaultSongs));
+            }
             
             inputText.value = localStorage.getItem('liubai_draft') || '';
-            
             setupSystemTheme();
-            checkAnniversaries();
-            
-            setTimeout(() => { appState.introFading = true; setTimeout(() => appState.showIntro = false, 2000); }, 3000);
+            setupAudio();
+            setTimeout(() => { appState.introFading = true; setTimeout(() => appState.showIntro = false, 1500); }, 3800);
         };
 
         const debouncedSave = () => {
             if(saveTimeout) clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(async () => { await localforage.setItem(STORAGE_KEY, JSON.parse(JSON.stringify({ messages: messages.value, profiles, settings, replyGroups: replyGroups.value, anniversaries: anniversaries.value }))); }, 500);
+            saveTimeout = setTimeout(async () => { await localforage.setItem(STORAGE_KEY, JSON.parse(JSON.stringify({ messages: messages.value, profiles, settings, replyGroups: replyGroups.value, anniversaries: anniversaries.value, periods: periods.value, chatState: { isGroupMode: chatState.isGroupMode, groupMembers: chatState.groupMembers }, playlist: playlist.value }))); }, 500);
         };
-        watch([messages, profiles, settings, anniversaries], debouncedSave, { deep: true });
+        watch([messages, profiles, settings, anniversaries, periods, () => chatState.isGroupMode, () => chatState.groupMembers, playlist], debouncedSave, { deep: true });
         const saveDraft = () => localStorage.setItem('liubai_draft', inputText.value);
 
-        // 主题与字体
-        const setupSystemTheme = () => {
-            const mq = window.matchMedia('(prefers-color-scheme: dark)');
-            if(settings.autoDarkMode) settings.darkMode = mq.matches;
-            mq.addEventListener('change', e => { if(settings.autoDarkMode) settings.darkMode = e.matches; });
-        };
+        const setupSystemTheme = () => { const mq = window.matchMedia('(prefers-color-scheme: dark)'); if(settings.autoDarkMode) settings.darkMode = mq.matches; mq.addEventListener('change', e => { if(settings.autoDarkMode) settings.darkMode = e.matches; }); };
         watch(() => settings.autoDarkMode, val => { if(val) settings.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches; });
-        watch(() => settings.darkMode, val => document.documentElement.classList.toggle('dark', val));
+        watch(() => settings.darkMode, val => document.documentElement.classList.toggle('dark', val), {immediate: true});
 
-        const customStyleVars = computed(() => {
-            let style = {};
-            if(settings.customFontName) style['--font-family'] = settings.customFontName;
-            return style;
-        });
+        const customStyleVars = computed(() => { let style = {}; if(settings.customFontName) style['--font-family'] = settings.customFontName; return style; });
+        watch(() => [settings.customFontUrl, settings.customFontName], () => { const fontEl = document.getElementById('custom-font-injection'); if (settings.customFontUrl && fontEl) { if(settings.customFontUrl.includes('css')) fontEl.innerHTML = `@import url('${settings.customFontUrl}');`; else { fontEl.innerHTML = `@font-face { font-family: 'CustomFont'; src: url('${settings.customFontUrl}'); }`; if(!settings.customFontName) settings.customFontName = 'CustomFont'; } } });
+        watch(() => settings.customBubbleCss, (val) => { let el = document.getElementById('dynamic-bubble-style'); if (!el) { el = document.createElement('style'); el.id = 'dynamic-bubble-style'; document.head.appendChild(el); } el.innerHTML = val || ''; }, { immediate: true });
 
-        watch(() => [settings.customFontUrl, settings.customFontName], () => {
-            const fontEl = document.getElementById('custom-font-injection');
-            if (settings.customFontUrl && fontEl) {
-                if(settings.customFontUrl.includes('css')) fontEl.innerHTML = `@import url('${settings.customFontUrl}');`;
-                else { fontEl.innerHTML = `@font-face { font-family: 'CustomFont'; src: url('${settings.customFontUrl}'); }`; if(!settings.customFontName) settings.customFontName = 'CustomFont'; }
-            }
-        });
-
-        // 弹窗
         const showModal = (type, title, opts = {}) => {
             modal.type = type; modal.title = title; modal.message = opts.message || '';
-            modal.input = opts.input || ''; modal.placeholder = opts.placeholder || '';
-            modal.onConfirm = opts.onConfirm; modal.show = true;
-            if(type === 'profile') modal.profileData = JSON.parse(JSON.stringify(profiles[opts.role]));
-            modal.role = opts.role;
+            modal.input = opts.input || ''; modal.placeholder = opts.placeholder || ''; modal.options = opts.options || [];
+            modal.onConfirm = opts.onConfirm; modal.show = true; modal.role = opts.role; modal.extData = opts.extData;
+            if(type === 'profile') modal.profileData = JSON.parse(JSON.stringify(opts.profileData || profiles[opts.role]));
+            if(type === 'song') modal.songData = opts.songData ? JSON.parse(JSON.stringify(opts.songData)) : { title:'', sub:'', url:'', isCustom:true };
         };
         const closeModal = () => modal.show = false;
         const confirmModal = () => {
-            if(modal.onConfirm) modal.onConfirm(modal.type === 'profile' ? modal.profileData : modal.input);
-            if(modal.type === 'profile') { profiles[modal.role] = modal.profileData; }
-            closeModal();
+            if(modal.onConfirm) modal.onConfirm(modal.type === 'profile' ? modal.profileData : (modal.type === 'song' ? modal.songData : modal.input));
+            if(modal.type === 'profile') { if(modal.role === 'me' || modal.role === 'them') profiles[modal.role] = modal.profileData; else if(modal.role === 'groupMember') { const idx = chatState.groupMembers.findIndex(m => m.id === modal.extData); if(idx > -1) chatState.groupMembers[idx] = { ...chatState.groupMembers[idx], ...modal.profileData }; } }
+            closeModal(); vibrate();
         };
 
-        const editProfile = (role) => showModal('profile', `重塑 (${role === 'me' ? '吾' : '客'})`, { role });
-        const handleImgUpload = (e, target) => {
-            const f = e.target.files[0]; if(!f) return; const r = new FileReader();
-            r.onload = ev => { if(target==='bg') settings.chatBgImg = ev.target.result; else modal.profileData.avatar = ev.target.result; };
-            r.readAsDataURL(f);
-        };
+        const editProfile = (role) => showModal('profile', `重绘容颜`, { role });
+        const handleImgUpload = (e, target) => { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = ev => { if(target==='bg') { if(!settings.customBgs) settings.customBgs = []; settings.customBgs.push(ev.target.result); settings.chatBgImg = ev.target.result; } else modal.profileData.avatar = ev.target.result; }; r.readAsDataURL(f); e.target.value = ''; };
+        const removeCustomBg = (idx) => { const url = settings.customBgs[idx]; settings.customBgs.splice(idx, 1); if(settings.chatBgImg === url) settings.chatBgImg = ''; };
 
-        // 音效与通知
         const initAudio = () => { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); };
-        const playTone = (type) => {
-            if (!settings.soundEnabled) return; initAudio();
-            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            if (type === 'send') { osc.type = 'sine'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.05); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05); osc.start(); osc.stop(audioCtx.currentTime + 0.05); }
-            else { osc.type = 'triangle'; osc.frequency.setValueAtTime(300, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(500, audioCtx.currentTime + 0.1); gain.gain.setValueAtTime(0, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05); gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); osc.start(); osc.stop(audioCtx.currentTime + 0.1); }
-        };
+        const playTone = (type) => { if (!settings.soundEnabled) return; initAudio(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); if (type === 'send') { osc.type = 'sine'; osc.frequency.setValueAtTime(300, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.05); gain.gain.setValueAtTime(0.03, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05); osc.start(); osc.stop(audioCtx.currentTime + 0.05); } else { osc.type = 'triangle'; osc.frequency.setValueAtTime(200, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 0.1); gain.gain.setValueAtTime(0, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.05); gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.1); osc.start(); osc.stop(audioCtx.currentTime + 0.1); } };
         const reqNotification = () => { if(settings.notification && Notification.permission !== 'granted') Notification.requestPermission(); };
-        const sendNotification = (msg) => { if(settings.notification && Notification.permission === 'granted' && document.visibilityState === 'hidden') { new Notification(profiles.them.name, { body: msg, icon: profiles.them.avatar }); unreadCount.value++; } };
+        const sendNotification = (senderName, msg, icon) => { if(settings.notification && Notification.permission === 'granted' && document.visibilityState === 'hidden') { new Notification(senderName, { body: msg, icon: icon }); unreadCount.value++; } };
+        document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") unreadCount.value = 0; });
 
-        // 交互逻辑
         const scrollToBottom = () => nextTick(() => { const el = document.getElementById('chat-container'); if(el) el.scrollTop = el.scrollHeight; });
-        watch(currentView, (val) => {
-            if(val === 'chat') { unreadCount.value = 0; scrollToBottom(); captureMode.value = false; }
-            if(val === 'library') nextTick(initSortable);
-            nextTick(() => { if(window.lucide) lucide.createIcons(); });
-        });
+        watch(currentView, (val) => { if(val === 'chat') { unreadCount.value = 0; scrollToBottom(); } if(val === 'library') nextTick(initSortable); nextTick(() => { if(window.lucide) lucide.createIcons(); }); vibrate(); });
 
-        const sendMessage = (sender, content) => {
-            if (!content) return;
-            messages.value.push({ id: genId(), sender, content, timestamp: Date.now() });
-            playTone(sender === 'me' ? 'send' : 'receive'); 
-            scrollToBottom();
-            if(sender === 'them') sendNotification(content);
-        };
+        const getSenderProfile = (id) => { if(id === 'me') return profiles.me; if(id === 'them') return profiles.them; const gm = chatState.groupMembers.find(m => m.id === id); return gm ? gm : { name: '客', avatar: '' }; };
 
-        const getDelayMs = () => {
-            switch(settings.replyDelay) {
-                case 'fast': return Math.random() * 1000 + 1000;
-                case 'normal': return Math.random() * 2000 + 3000;
-                case 'slow': return Math.random() * 5000 + 5000;
-                default: return 2000;
-            }
-        };
-
-        const handleSend = () => {
-            const txt = inputText.value.trim(); if (!txt) return;
-            sendMessage('me', txt); inputText.value = ''; saveDraft();
-            triggerReply(getDelayMs());
-        };
-
-        const forceReply = () => triggerReply(getDelayMs(), true);
-        
+        const sendMessage = (sender, content) => { if (!content) return; messages.value.push({ id: genId(), sender, content, timestamp: Date.now() }); playTone(sender === 'me' ? 'send' : 'receive'); scrollToBottom(); vibrate(); if(sender !== 'me') sendNotification(getSenderProfile(sender).name, content, getSenderProfile(sender).avatar); };
+        const getDelayMs = () => { let ms = parseInt(settings.replyDelay) * 1000; if(isNaN(ms) || ms < 0) ms = 1000; return ms + (Math.random() * 500); };
+        const handleSend = () => { const txt = inputText.value.trim(); if (!txt) return; sendMessage('me', txt); inputText.value = ''; saveDraft(); triggerReply(getDelayMs()); };
+        const forceReply = () => { vibrate(); triggerReply(getDelayMs(), true); };
         const triggerReply = async (delayMs, isForce = false) => {
             if (isTyping.value) return;
-            let pool = []; replyGroups.value.forEach(g => g.replies.forEach(r => { if(r.enabled && r.text) pool.push(r.text); }));
-            if(pool.length === 0) return;
-            
+            if (isForce && settings.readButNoReply && Math.random() < 0.25) { showToast("客已阅，无言"); return; }
+            let pool = []; replyGroups.value.forEach(g => g.replies.forEach(r => { if(r.enabled && r.text) pool.push(r.text); })); if(pool.length === 0) return;
             isTyping.value = true; scrollToBottom();
-            
             setTimeout(async () => {
-                const count = isForce ? (Math.floor(Math.random() * 3) + 1) : 1;
+                let count = 1; if(isForce && !settings.combineReplies) count = Math.floor(Math.random() * 2) + 1;
                 for(let i=0; i<count; i++) {
-                    sendMessage('them', pool[Math.floor(Math.random() * pool.length)]);
-                    if(i < count -1) { scrollToBottom(); await new Promise(r => setTimeout(r, 800)); }
+                    let targetSender = 'them'; if(chatState.isGroupMode && chatState.groupMembers.length > 0) { const rIdx = Math.floor(Math.random() * chatState.groupMembers.length); targetSender = chatState.groupMembers[rIdx].id; }
+                    let finalMsg = pool[Math.floor(Math.random() * pool.length)];
+                    if (settings.combineReplies) { const cCount = Math.floor(Math.random() * 3) + 1; const parts = new Set([finalMsg]); while(parts.size < cCount) { parts.add(pool[Math.floor(Math.random() * pool.length)]); } finalMsg = Array.from(parts).join(' '); }
+                    sendMessage(targetSender, finalMsg); if(i < count -1) { scrollToBottom(); await new Promise(r => setTimeout(r, 800)); }
                 }
                 isTyping.value = false;
             }, delayMs);
         };
-
-        watch(() => settings.autoReplyInterval, (val) => {
-            if(activeReplyTimer) clearInterval(activeReplyTimer);
-            if(val > 0) activeReplyTimer = setInterval(() => forceReply(), val * 60 * 1000);
-        });
-
-        const deleteMsg = (id) => showModal('confirm', '抹去痕迹', { message: '一旦拂去，再无踪影。', onConfirm: () => messages.value = messages.value.filter(m => m.id !== id) });
-
-        // 截图与搜索
-        const selectAllCapture = () => selectedCaptureMsgs.value = [...messages.value];
-        const generateScreenshot = () => {
-            selectedCaptureMsgs.value.sort((a,b) => messages.value.findIndex(m=>m.id===a.id) - messages.value.findIndex(m=>m.id===b.id));
-            nextTick(() => {
-                const el = document.getElementById('hidden-capture-area');
-                html2canvas(el, { backgroundColor: settings.darkMode ? '#111111' : '#FFFFFF', scale: 2 }).then(canvas => {
-                    const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = `留白_拓印_${Date.now()}.png`; a.click(); captureMode.value = false;
-                });
-            });
-        };
+        watch(() => settings.autoReplyInterval, (val) => { if(activeReplyTimer) clearInterval(activeReplyTimer); let mins = parseFloat(val); if(mins > 0) activeReplyTimer = setInterval(() => forceReply(), mins * 60 * 1000); }, { immediate: true });
+        const deleteMsg = (id) => showModal('confirm', '拂去微尘', { message: '一旦拂去，再无踪影。', onConfirm: () => messages.value = messages.value.filter(m => m.id !== id) });
+        const copyText = (txt) => { navigator.clipboard.writeText(txt); showToast("已摹写"); };
 
         const toggleSearch = () => { chatState.isSearching = !chatState.isSearching; chatState.keyword=''; chatState.results=[]; };
-        const executeSearch = () => {
-            const k = chatState.keyword.trim(); if(!k) { chatState.results=[]; return; }
-            chatState.results = messages.value.filter(m => m.content.includes(k)).map(m=>m.id);
-            if(chatState.results.length>0) { chatState.currentIdx = chatState.results.length-1; jumpToMsg(); }
-        };
+        const executeSearch = () => { const k = chatState.keyword.trim(); if(!k) { chatState.results=[]; return; } chatState.results = messages.value.filter(m => m.content.includes(k)).map(m=>m.id); if(chatState.results.length>0) { chatState.currentIdx = chatState.results.length-1; jumpToMsg(); } };
         const jumpSearch = (dir) => { chatState.currentIdx += dir; if(chatState.currentIdx < 0) chatState.currentIdx = chatState.results.length-1; if(chatState.currentIdx >= chatState.results.length) chatState.currentIdx = 0; jumpToMsg(); };
         const jumpToMsg = () => { const el = document.getElementById('msg-'+chatState.results[chatState.currentIdx]); if(el) el.scrollIntoView({behavior:'smooth', block:'center'}); };
         const highlightText = (text) => { if(chatState.keyword && chatState.results.length>0) return text.replace(new RegExp(`(${chatState.keyword})`, 'gi'), '<span class="highlight">$1</span>'); return text; };
 
-        // 卷宗管理
-        const addGroup = () => showModal('prompt', '辟新卷', { onConfirm: (n) => { if(n) { const id = genId(); replyGroups.value.push({ id, name: n, replies: [] }); currentGroupId.value = id; debouncedSave(); } } });
+        const openGroupManager = () => { showGroupDrawer.value = true; vibrate(); };
+        const addGroupMember = () => chatState.groupMembers.push({ id: genId(), name: `客·${chatState.groupMembers.length+1}`, avatar: '' });
+        const removeGroupMember = (id) => chatState.groupMembers = chatState.groupMembers.filter(m => m.id !== id);
+        const editGroupMember = (m) => showModal('profile', '重绘容颜', { role: 'groupMember', extData: m.id, profileData: m });
+
+        const addGroup = () => showModal('prompt', '辟新卷', { placeholder: '卷名...', onConfirm: (n) => { if(n) { const id = genId(); replyGroups.value.push({ id, name: n, replies: [] }); currentGroupId.value = id; debouncedSave(); } } });
         const deleteGroup = (id) => showModal('confirm', '焚毁此卷', { onConfirm: () => { replyGroups.value = replyGroups.value.filter(g => g.id !== id); currentGroupId.value = replyGroups.value[0]?.id; debouncedSave(); } });
         const addReplyToCurrent = () => { if(currentGroup.value) { currentGroup.value.replies.unshift({ id: genId(), text: '', enabled: true }); debouncedSave(); } };
         const batchAddReplies = () => showModal('batchAdd', '泼墨倾泻', { onConfirm: (val) => { if(!val) return; const lines = val.split('\n').map(l=>l.trim()).filter(Boolean); lines.forEach(text => currentGroup.value.replies.push({ id: genId(), text, enabled: true })); debouncedSave(); }});
-        const deleteSelectedLib = () => { if(selectedLibIds.value.length === 0 || !currentGroup.value) return; currentGroup.value.replies = currentGroup.value.replies.filter(r => !selectedLibIds.value.includes(r.id)); selectedLibIds.value = []; batchSelectMode.value = false; debouncedSave(); };
-        const deduplicateReplies = () => {
-            if(!currentGroup.value) return;
-            const set = new Set(); const arr = [];
-            currentGroup.value.replies.forEach(r => { if(!set.has(r.text)) { set.add(r.text); arr.push(r); } });
-            const diff = currentGroup.value.replies.length - arr.length;
-            currentGroup.value.replies = arr; debouncedSave();
-            showModal('prompt', '涤尘完毕', { message: `共清退 ${diff} 条重复。`, onConfirm: ()=>{} });
+        const batchAction = (action) => {
+            if(selectedLibIds.value.length === 0 || !currentGroup.value) return;
+            if(action === 'delete') { currentGroup.value.replies = currentGroup.value.replies.filter(r => !selectedLibIds.value.includes(r.id)); selectedLibIds.value = []; batchSelectMode.value = false; debouncedSave(); } 
+            else if (action === 'toggle') { currentGroup.value.replies.forEach(r => { if(selectedLibIds.value.includes(r.id)) r.enabled = !r.enabled; }); selectedLibIds.value = []; batchSelectMode.value = false; debouncedSave(); } 
+            else if (action === 'move') { const otherGroups = replyGroups.value.filter(g => g.id !== currentGroupId.value); if(otherGroups.length === 0) { showToast("无他卷可迁"); return; } const opts = otherGroups.map(g => ({ label: g.name, value: g.id })); showModal('select', '迁往何处', { placeholder: '择一卷...', options: opts, onConfirm: (targetId) => { if(!targetId) return; const targetGroup = replyGroups.value.find(g => g.id === targetId); const itemsToMove = currentGroup.value.replies.filter(r => selectedLibIds.value.includes(r.id)); currentGroup.value.replies = currentGroup.value.replies.filter(r => !selectedLibIds.value.includes(r.id)); targetGroup.replies.push(...itemsToMove); selectedLibIds.value = []; batchSelectMode.value = false; debouncedSave(); showToast("落定"); }}); }
         };
+        const deduplicateReplies = () => { if(!currentGroup.value) return; const set = new Set(); const arr = []; currentGroup.value.replies.forEach(r => { if(!set.has(r.text)) { set.add(r.text); arr.push(r); } }); const diff = currentGroup.value.replies.length - arr.length; currentGroup.value.replies = arr; debouncedSave(); showToast(diff > 0 ? `涤去 ${diff} 缕重影` : `清明无影`); };
         watch(currentGroupId, () => { batchSelectMode.value = false; selectedLibIds.value=[]; libSearch.value=''; nextTick(initSortable); });
-        const initSortable = () => {
-            if(sortableInst) sortableInst.destroy();
-            const el = document.querySelector('.reply-sortable-list'); if(!el) return;
-            sortableInst = new Sortable(el, { animation: 150, handle: '.drag-handle', onEnd: (evt) => { if(!currentGroup.value) return; const item = currentGroup.value.replies.splice(evt.oldIndex, 1)[0]; currentGroup.value.replies.splice(evt.newIndex, 0, item); debouncedSave(); } });
-        };
+        const initSortable = () => { if(sortableInst) sortableInst.destroy(); const el = document.querySelector('.reply-sortable-list'); if(!el) return; sortableInst = new Sortable(el, { animation: 200, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", handle: '.drag-handle', onEnd: (evt) => { if(!currentGroup.value) return; const item = currentGroup.value.replies.splice(evt.oldIndex, 1)[0]; currentGroup.value.replies.splice(evt.newIndex, 0, item); debouncedSave(); } }); };
 
-        // 数据备份
-        const exportAllData = () => { const blob = new Blob([JSON.stringify({ messages: messages.value, profiles, settings, replyGroups: replyGroups.value, anniversaries: anniversaries.value })], {type: "application/json"}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `留白_全卷_${Date.now()}.json`; a.click(); };
-        const importAllData = (e) => {
-            const file = e.target.files[0]; if(!file) return; const reader = new FileReader();
-            reader.onload = ev => { try { const data = JSON.parse(ev.target.result); showModal('confirm', '纳藏旧卷', { message: '将覆盖当前所有痕迹，可愿？', onConfirm: () => { if(data.messages) messages.value = data.messages; if(data.profiles) Object.assign(profiles, data.profiles); if(data.settings) Object.assign(settings, { ...settings, ...data.settings }); if(data.replyGroups) replyGroups.value = data.replyGroups; if(data.anniversaries) anniversaries.value = data.anniversaries; debouncedSave(); switchView('home'); }}); } catch(err) { alert('文书残破'); } }; reader.readAsText(file);
-        };
-        const clearData = () => showModal('confirm', '付之一炬', { message: '虚妄皆空。确认烧去？', onConfirm: () => { messages.value = []; debouncedSave(); switchView('home'); }});
+        const exportAllData = () => { const blob = new Blob([JSON.stringify({ messages: messages.value, profiles, settings, replyGroups: replyGroups.value, anniversaries: anniversaries.value, periods: periods.value, chatState: { isGroupMode: chatState.isGroupMode, groupMembers: chatState.groupMembers }, playlist: playlist.value })], {type: "application/json"}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `留白_全卷_${Date.now()}.json`; a.click(); };
+        const importAllData = (e) => { const file = e.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = ev => { try { const data = JSON.parse(ev.target.result); showModal('confirm', '纳藏旧卷', { message: '将覆盖当前所有痕迹，可愿？', onConfirm: () => { if(data.messages) messages.value = data.messages; if(data.profiles) Object.assign(profiles, data.profiles); if(data.settings) Object.assign(settings, { ...settings, ...data.settings }); if(data.replyGroups) replyGroups.value = data.replyGroups; if(data.anniversaries) anniversaries.value = data.anniversaries; if(data.periods) periods.value = data.periods; if(data.chatState) { chatState.isGroupMode = data.chatState.isGroupMode||false; chatState.groupMembers = data.chatState.groupMembers||[]; } if(data.playlist) playlist.value = data.playlist; debouncedSave(); switchView('home'); }}); } catch(err) { showToast('文书残破'); } }; reader.readAsText(file); e.target.value = ''; };
+        const clearData = () => showModal('confirm', '付之一炬', { message: '虚妄皆空，确认烧去所有立卷？', onConfirm: () => { messages.value = []; debouncedSave(); switchView('home'); }});
 
-        // 纪念日
-        const addAnniversary = () => anniversaries.value.push({ id: genId(), date: '', name: '' });
+        const sortedAnniversaries = computed(() => [...anniversaries.value].sort((a,b) => new Date(a.date||0) - new Date(b.date||0)));
+        const addAnniversary = () => { const d = new Date(); const ds = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; anniversaries.value.unshift({ id: genId(), date: ds, name: '' }); };
         const removeAnniversary = (id) => anniversaries.value = anniversaries.value.filter(a => a.id !== id);
-        const checkAnniversaries = () => {
-            if(anniversaries.value.length === 0) return;
-            const lastCheck = localStorage.getItem('liubai_anni'); const todayStr = new Date().toLocaleDateString();
-            if(lastCheck === todayStr) return; 
-            const d = new Date(); const md = `${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
-            const matched = anniversaries.value.find(a => a.date === md);
-            if(matched) setTimeout(() => sendMessage('them', `今日是 ${matched.name}，愿君安好。`), 3000);
-            localStorage.setItem('liubai_anni', todayStr);
-        };
+        const getAnniDays = (dateStr) => { if(!dateStr) return 0; const t = new Date(dateStr); t.setHours(0,0,0,0); const n = new Date(); n.setHours(0,0,0,0); return Math.ceil((t - n) / 86400000); };
 
-        // 洞察
+        const sortedPeriods = computed(() => [...periods.value].sort((a,b) => new Date(b.date) - new Date(a.date)));
+        const promptAddPeriod = () => { const d = new Date(); const ds = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; periods.value.unshift({ id: genId(), date: ds }); debouncedSave(); };
+        const removePeriod = (id) => { periods.value = periods.value.filter(p=>p.id!==id); debouncedSave(); };
+        const getPeriodGap = (d1, d2) => Math.abs(Math.floor((new Date(d1) - new Date(d2)) / 86400000));
+        const periodDaysSince = computed(() => { if(periods.value.length === 0) return '-'; const last = Math.max(...periods.value.map(p => new Date(p.date).getTime())); const n = new Date(); n.setHours(0,0,0,0); return Math.floor((n - last) / 86400000); });
+        const periodAvgDays = computed(() => { if(periods.value.length < 2) return '-'; const sorted = [...periods.value].map(p=>new Date(p.date).getTime()).sort((a,b)=>a-b); let total = 0; for(let i=1; i<sorted.length; i++) total += (sorted[i] - sorted[i-1]); return Math.floor(total / (sorted.length-1) / 86400000); });
+
         const statData = computed(() => {
-            const total = messages.value.length; 
-            const d = messages.value.length ? new Date(messages.value[0].timestamp) : new Date();
-            const now = Date.now(), day = 86400000;
-            const monthCount = messages.value.filter(m => now - m.timestamp < 30*day).length;
-            
-            const hours = new Array(24).fill(0);
-            messages.value.forEach(m => hours[new Date(m.timestamp).getHours()]++);
-            const peakHour = hours.indexOf(Math.max(...hours, 1));
-
-            const getTop = (sender) => {
-                const map = {}; messages.value.filter(m=>m.sender===sender).forEach(m=> map[m.content] = (map[m.content]||0)+1);
-                const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]);
-                return sorted.length ? sorted[0][0] : null;
-            };
-
-            return { 
-                firstTime: `${d.getFullYear()}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getDate().toString().padStart(2,'0')}`, 
-                monthCount, peakHour, topWordMe: getTop('me'), topWordThem: getTop('them')
-            }
+            const d = messages.value.length ? new Date(messages.value[0].timestamp) : new Date(); let totalChars = 0; const hours = new Array(24).fill(0); let latestMs = 0;
+            messages.value.forEach(m => { totalChars += m.content.length; const dt = new Date(m.timestamp); hours[dt.getHours()]++; const h = dt.getHours(); if(h >= 0 && h <= 5) { const timeInMs = dt.getHours()*3600000 + dt.getMinutes()*60000; if(timeInMs > latestMs) latestMs = timeInMs; } });
+            const formatHour = (ms) => { if(ms === 0) return '--:--'; let h = Math.floor(ms/3600000); let m = Math.floor((ms%3600000)/60000); return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; };
+            const getTopWords = (senderType) => { const map = {}; messages.value.forEach(m => { const isThem = m.sender !== 'me'; if((senderType === 'me' && m.sender === 'me') || (senderType === 'them' && isThem)) { const chunks = m.content.split(/[ ，。！？\n~]+/).filter(x=>x.length>1); if(chunks.length===0 && m.content.length>0) chunks.push(m.content); chunks.forEach(c => map[c] = (map[c]||0)+1); } }); return Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0, 5).map(x => ({w: x[0], c: x[1]})); };
+            return { firstTime: `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')}`, totalChars, latestNightHour: formatHour(latestMs), topWordsMe: getTopWords('me'), topWordsThem: getTopWords('them') }
         });
 
-        const switchView = (v) => currentView.value = v;
+        // 音乐匣核心
+        const setupAudio = () => {
+            if(!audio.value) {
+                audio.value = new Audio();
+                audio.value.addEventListener('ended', handleSongEnd);
+                audio.value.addEventListener('error', () => { showToast("此曲佚失"); nextSong(); });
+            }
+        };
+        const playSong = (index) => {
+            if (playlist.value.length === 0) return;
+            musicState.currentIndex = index;
+            const song = playlist.value[index];
+            if(!audio.value) setupAudio();
+            audio.value.src = song.url;
+            audio.value.play().catch(e=>console.log(e));
+        };
+        const togglePlay = () => {
+            if(playlist.value.length === 0) return;
+            if(!audio.value || !audio.value.src) playSong(musicState.currentIndex);
+            else if(audio.value.paused) audio.value.play();
+            else audio.value.pause();
+        };
+        const nextSong = () => {
+            if(playlist.value.length === 0) return;
+            let nextIdx = musicState.currentIndex + 1;
+            if(musicState.mode === 1) nextIdx = Math.floor(Math.random() * playlist.value.length);
+            else if(nextIdx >= playlist.value.length) nextIdx = 0;
+            playSong(nextIdx);
+        };
+        const prevSong = () => {
+            if(playlist.value.length === 0) return;
+            let prevIdx = musicState.currentIndex - 1;
+            if(musicState.mode === 1) prevIdx = Math.floor(Math.random() * playlist.value.length);
+            else if(prevIdx < 0) prevIdx = playlist.value.length - 1;
+            playSong(prevIdx);
+        };
+        const handleSongEnd = () => {
+            if(musicState.mode === 2) { audio.value.currentTime = 0; audio.value.play(); }
+            else nextSong();
+        };
+        const togglePlayMode = () => { musicState.mode = (musicState.mode + 1) % 3; showToast(["循序", "随心", "单曲"][musicState.mode]); };
+        
+        const addSong = () => showModal('song', '添置新曲', { onConfirm: (data) => { if(data.title && data.url) { playlist.value.unshift(data); debouncedSave(); showToast("入匣"); } } });
+        const editSong = (idx) => showModal('song', '重撰曲目', { songData: playlist.value[idx], onConfirm: (data) => { playlist.value[idx] = data; debouncedSave(); } });
+        const removeSong = (idx) => { playlist.value.splice(idx, 1); debouncedSave(); if(musicState.currentIndex === idx) { audio.value.pause(); audio.value.src=''; } };
 
-        onMounted(() => { initData(); setTimeout(() => { if(window.lucide) lucide.createIcons(); document.documentElement.classList.toggle('dark', settings.darkMode); }, 500); document.addEventListener('click', () => { if(settings.soundEnabled && !audioCtx) initAudio(); }, {once:true}); });
+        // 悬浮拖拽
+        const startDrag = (e) => {
+            if(!musicState.minimized) return;
+            dragInfo.isDragging = true;
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+            dragInfo.startX = clientX; dragInfo.startY = clientY;
+            dragInfo.initialX = musicState.x; dragInfo.initialY = musicState.y;
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('touchmove', onDrag, {passive: false});
+            document.addEventListener('mouseup', stopDrag);
+            document.addEventListener('touchend', stopDrag);
+        };
+        const onDrag = (e) => {
+            if(!dragInfo.isDragging) return;
+            e.preventDefault();
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+            const dx = clientX - dragInfo.startX; const dy = clientY - dragInfo.startY;
+            let nx = dragInfo.initialX + dx; let ny = dragInfo.initialY + dy;
+            const mw = window.innerWidth - 48; const mh = window.innerHeight - 48;
+            if(nx < 0) nx = 0; if(ny < 0) ny = 0; if(nx > mw) nx = mw; if(ny > mh) ny = mh;
+            musicState.x = nx; musicState.y = ny;
+        };
+        const stopDrag = () => {
+            dragInfo.isDragging = false;
+            document.removeEventListener('mousemove', onDrag); document.removeEventListener('touchmove', onDrag);
+            document.removeEventListener('mouseup', stopDrag); document.removeEventListener('touchend', stopDrag);
+        };
+
+        const switchView = (v) => { currentView.value = v; vibrate(); };
+
+        onMounted(() => { initData(); setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 500); document.addEventListener('click', () => { if(settings.soundEnabled && !audioCtx) initAudio(); }, {once:true}); });
 
         return {
-            appState, currentView, unreadCount, messages, inputText, isTyping, profiles, settings, presetBgs, anniversaries,
-            replyGroups, currentGroupId, currentGroup, captureMode, selectedCaptureMsgs, chatState, statData, modal, customStyleVars,
+            appState, currentView, homeMenus, unreadCount, toast, messages, inputText, isTyping, profiles, settings, 
+            timelineTab, anniversaries, sortedAnniversaries, periods, sortedPeriods, periodDaysSince, periodAvgDays, getAnniDays, getPeriodGap, addAnniversary, removeAnniversary, promptAddPeriod, removePeriod,
+            replyGroups, currentGroupId, currentGroup, chatState, showGroupDrawer, statData, modal, customStyleVars,
             libSearch, batchSelectMode, selectedLibIds, filteredReplies,
-            switchView, handleSend, forceReply, deleteMsg, editProfile, saveDraft, highlightText, toggleSearch, executeSearch, jumpSearch, generateScreenshot, selectAllCapture,
-            addGroup, deleteGroup, addReplyToCurrent, batchAddReplies, deleteSelectedLib, deduplicateReplies,
-            exportAllData, importAllData, clearData, debouncedSave, showModal, closeModal, confirmModal, handleImgUpload, reqNotification, addAnniversary, removeAnniversary
+            switchView, handleSend, forceReply, deleteMsg, copyText, editProfile, saveDraft, highlightText, toggleSearch, executeSearch, jumpSearch, removeCustomBg,
+            addGroup, deleteGroup, addReplyToCurrent, batchAddReplies, batchAction, deduplicateReplies, exportAllData, importAllData, clearData, debouncedSave, showModal, closeModal, confirmModal, handleImgUpload, reqNotification,
+            openGroupManager, addGroupMember, removeGroupMember, editGroupMember, getSenderProfile,
+            audio, playlist, showPlaylist, musicState, currentSong, playSong, togglePlay, nextSong, prevSong, togglePlayMode, addSong, editSong, removeSong, startDrag
         };
     }
 }).mount('#app');
