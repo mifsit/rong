@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>对话 · 留白</title>
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/localforage@1.10.0/dist/localforage.min.js"></script>
+    <script src="https://unpkg.com/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        /* 古风色谱 */
+                        bg: 'var(--color-bg)', surface: 'var(--color-surface)',
+                        text: 'var(--color-text)', muted: 'var(--color-muted)',
+                        border: 'var(--color-border)', accent: 'var(--color-accent)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* 宣纸与水墨主题体系 */
+        :root {
+            --color-bg: #f9f8f4; /* 宣纸白 */
+            --color-surface: #f2efe8; /* 稍深的纸色 */
+            --color-text: #2b2b2b; /* 墨黑 */
+            --color-muted: #8b8984; /* 淡墨 */
+            --color-border: #e0dcd1; /* 纸纹边界 */
+            --color-accent: #8b2b2b; /* 印泥红 */
+        }
+        .dark {
+            --color-bg: #1c1c1a; /* 玄青 */
+            --color-surface: #252422; /* 沉木 */
+            --color-text: #d4d3d0; /* 银白 */
+            --color-muted: #7a7976; 
+            --color-border: #383734; 
+            --color-accent: #a34848; 
+        }
+
+        body {
+            background-color: #d1d5db; color: var(--color-text);
+            margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased;
+            font-family: 'Noto Serif SC', serif; /* 全局默认古风字体 */
+        }
+        .dark body { background-color: #000000; }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        .app-container {
+            width: 100vw; height: 100vh;
+            background: var(--color-bg); position: relative;
+            display: flex; flex-direction: column; overflow: hidden;
+            transition: background-image 0.5s ease;
+        }
+        @media (min-width: 768px) {
+            .app-container {
+                width: 390px; height: 844px; border-radius: 30px;
+                box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3), inset 0 0 0 6px #111;
+                border: 1px solid #333;
+            }
+        }
+
+        /* ---------------- 用户指定气泡样式 ---------------- */
+        .message {
+            position: relative !important;
+            line-height: 1.5 !important; /* 稍微放宽一点行高适应中文字体 */
+            word-break: break-word !important;
+            overflow: visible !important;
+            width: fit-content !important;
+            max-width: 280px !important;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* 古风稍微加一点极弱的投影 */
+            padding: 8px 11px;
+            border: none;
+            font-family: inherit;
+        }
+        .message.message-sent,
+        .message.message-received {
+            display: inline-block;
+            position: relative;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            width: auto;
+            /* min-width: 70%; 去除此限制，否则单字气泡也会撑满屏幕70% */
+            color: #000;
+            font-size: inherit;
+        }
+        /* 日间模式 */
+        .message.message-sent { background-color: #95ec69; }
+        .message.message-received { background-color: #ffffff; }
+        .message::after {
+            content: ""; position: absolute; width: 9px; height: 9px; border-radius: 1.5px;
+        }
+        .message.message-sent::after {
+            right: -3.8px; top: 18px; background-color: #95ec69;
+            transform: translateY(-50%) rotate(45deg);
+        }
+        .message.message-received::after {
+            left: -3.8px; top: 18px; background-color: #ffffff;
+            transform: translateY(-50%) rotate(45deg);
+        }
+        /* 夜间模式 */
+        .dark .message.message-sent { background-color: #59B269; color: #fff !important; }
+        .dark .message.message-received { background-color: #2c2c2c !important; color: #fff !important; }
+        .dark .message.message-sent::after { background-color: #59B269; }
+        .dark .message.message-received::after { background-color: #2c2c2c !important; }
+
+        /* 高亮搜索词 */
+        .highlight { background-color: rgba(212, 175, 55, 0.5); border-radius: 2px; }
+
+        /* ---------------- 动画系统 ---------------- */
+        .view-enter-active, .view-leave-active { transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); position: absolute; width: 100%; height: 100%; }
+        .view-enter-from { transform: translateX(100%); opacity: 0; }
+        .view-leave-to { transform: translateX(-30%); opacity: 0; }
+        
+        .fade-enter-active, .fade-leave-active { transition: opacity 1.5s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+        /* 精美开场动画 */
+        .intro-overlay { position: fixed; inset: 0; z-index: 100; background: var(--color-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+        .intro-moon { position: absolute; width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle, rgba(200,200,200,0.1) 0%, transparent 70%); opacity: 0; animation: moonRise 4s ease forwards; }
+        .dark .intro-moon { background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%); }
+        .intro-text { position: relative; z-index: 2; font-size: 24px; font-weight: 300; letter-spacing: 0.5em; text-indent: 0.5em; opacity: 0; animation: introReveal 3.5s forwards cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .intro-seal { position: absolute; bottom: 20%; width: 30px; height: 30px; border: 1px solid var(--color-accent); color: var(--color-accent); font-size: 12px; display: flex; align-items: center; justify-content: center; opacity: 0; animation: sealStamp 4s forwards 1s; writing-mode: vertical-rl; }
+        
+        @keyframes moonRise { 0% { opacity: 0; transform: translateY(50px) scale(0.8); } 50% { opacity: 1; transform: translateY(0) scale(1.2); } 100% { opacity: 0; transform: translateY(-20px) scale(1); } }
+        @keyframes introReveal { 0% { opacity: 0; transform: translateY(10px); } 30% { opacity: 1; transform: translateY(0); filter: blur(0); } 80% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-10px); filter: blur(2px); } }
+        @keyframes sealStamp { 0% { opacity: 0; transform: scale(2); } 20% { opacity: 0.8; transform: scale(1); } 80% { opacity: 0.8; } 100% { opacity: 0; } }
+
+        input, textarea, button { outline: none; background: transparent; }
+        .sans-text { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", Roboto, sans-serif; }
+    </style>
+    <style id="custom-css-injection"></style>
+</head>
+<body class="flex justify-center items-center h-screen w-screen transition-colors duration-500">
+
+<div id="app" v-cloak>
+    <!-- 古风开场 -->
+    <transition name="fade">
+        <div v-if="appState.showIntro" class="intro-overlay text-text">
+            <div class="intro-moon"></div>
+            <div class="intro-text">见字如面</div>
+            <div class="intro-seal">留白</div>
+        </div>
+    </transition>
+
+    <div class="app-container text-[14px]" :style="appBgStyle">
+        
+        <transition name="view">
+            <!-- ================= 主屏幕 (重新设计古风版) ================= -->
+            <div v-if="currentView === 'home'" class="absolute inset-0 flex flex-col z-10 bg-bg bg-opacity-95 backdrop-blur-sm relative">
+                
+                <!-- 装饰边框 -->
+                <div class="absolute inset-4 border border-border/60 pointer-events-none rounded-xl"></div>
+                <div class="absolute inset-5 border border-border/30 pointer-events-none rounded-lg"></div>
+
+                <div class="flex-1 flex flex-col items-center pt-32 px-8">
+                    <!-- 标题区 -->
+                    <div class="flex flex-col items-center mb-16 relative">
+                        <div class="w-[1px] h-12 bg-accent/40 mb-4"></div>
+                        <h1 class="text-4xl tracking-[0.3em] ml-[0.15em] font-medium text-text">留白</h1>
+                        <p class="text-xs text-muted tracking-widest mt-6">笔墨生香 · 万物有灵</p>
+                    </div>
+
+                    <!-- 菜单玉牌区 -->
+                    <div class="grid grid-cols-2 gap-6 w-full max-w-[240px]">
+                        
+                        <div class="flex flex-col items-center gap-3 group cursor-pointer" @click="switchView('chat')">
+                            <div class="w-16 h-20 bg-surface border border-border rounded-lg shadow-sm flex items-center justify-center relative transition-all group-hover:shadow-md group-hover:-translate-y-1">
+                                <i data-lucide="pen-tool" class="w-6 h-6 text-text"></i>
+                                <div v-if="unreadCount > 0" class="absolute -top-2 -right-2 bg-accent text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-surface">{{ unreadCount }}</div>
+                            </div>
+                            <span class="text-[12px] tracking-widest">飞鸽传书</span>
+                        </div>
+
+                        <div class="flex flex-col items-center gap-3 group cursor-pointer" @click="switchView('library')">
+                            <div class="w-16 h-20 bg-surface border border-border rounded-lg shadow-sm flex items-center justify-center transition-all group-hover:shadow-md group-hover:-translate-y-1">
+                                <i data-lucide="scroll-text" class="w-6 h-6 text-text"></i>
+                            </div>
+                            <span class="text-[12px] tracking-widest">藏经卷宗</span>
+                        </div>
+
+                        <div class="flex flex-col items-center gap-3 group cursor-pointer" @click="switchView('insight')">
+                            <div class="w-16 h-20 bg-surface border border-border rounded-lg shadow-sm flex items-center justify-center transition-all group-hover:shadow-md group-hover:-translate-y-1">
+                                <i data-lucide="eye" class="w-6 h-6 text-text"></i>
+                            </div>
+                            <span class="text-[12px] tracking-widest">洞察秋毫</span>
+                        </div>
+
+                        <div class="flex flex-col items-center gap-3 group cursor-pointer" @click="switchView('settings')">
+                            <div class="w-16 h-20 bg-surface border border-border rounded-lg shadow-sm flex items-center justify-center transition-all group-hover:shadow-md group-hover:-translate-y-1">
+                                <i data-lucide="settings-2" class="w-6 h-6 text-text"></i>
+                            </div>
+                            <span class="text-[12px] tracking-widest">万象法则</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ================= 交谈试图 ================= -->
+            <div v-else-if="currentView === 'chat'" class="absolute inset-0 flex flex-col z-20">
+                <!-- 顶部：去除了深黑背景，采用温和的半透明浅色底 -->
+                <header class="h-14 flex items-center justify-between px-3 border-b border-border/30 shrink-0 bg-surface/70 backdrop-blur-md">
+                    <div class="flex items-center gap-2">
+                        <button @click="switchView('home')" class="p-2 -ml-1 text-text hover:text-accent transition-colors"><i data-lucide="chevron-left" class="w-5 h-5 stroke-[1.5]"></i></button>
+                        
+                        <div class="flex items-center gap-2 group cursor-pointer">
+                            <!-- 修复点击头像穿透问题 -->
+                            <div v-if="settings.showAvatar" @click.stop="editAvatar('them')" class="w-8 h-8 bg-surface border border-border flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity" :style="{ borderRadius: settings.avatarRadius + '%' }">
+                                <img v-if="profiles.them.avatar" :src="profiles.them.avatar" class="w-full h-full object-cover">
+                                <span v-else class="text-xs text-muted">{{ profiles.them.name.charAt(0) }}</span>
+                            </div>
+                            <div class="flex flex-col" @click.stop="editName('them')">
+                                <span class="text-[14px] font-medium tracking-widest">{{ profiles.them.name }}</span>
+                                <span v-if="isTyping" class="text-[10px] text-accent tracking-widest absolute top-10">正落笔...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                        <button @click="toggleSearch" class="p-2 text-muted hover:text-text transition-colors"><i data-lucide="search" class="w-4 h-4 stroke-[1.5]"></i></button>
+                        <button @click="captureScreenshot" class="p-2 text-muted hover:text-text transition-colors"><i data-lucide="camera" class="w-4 h-4 stroke-[1.5]"></i></button>
+                    </div>
+                </header>
+
+                <!-- 搜索栏 -->
+                <div v-if="chatState.isSearching" class="bg-surface/90 backdrop-blur px-4 py-2 flex items-center gap-2 border-b border-border/30 text-xs shrink-0 z-10">
+                    <i data-lucide="search" class="w-3 h-3 text-muted"></i>
+                    <input v-model="chatState.keyword" type="text" placeholder="寻觅..." class="flex-1 bg-transparent border-none" @input="executeSearch">
+                    <span v-if="chatState.results.length > 0" class="text-muted text-[10px]">{{ chatState.currentIdx + 1 }}/{{ chatState.results.length }}</span>
+                    <button @click="jumpSearch(-1)" class="p-1 text-text" :disabled="chatState.results.length===0"><i data-lucide="chevron-up" class="w-3 h-3"></i></button>
+                    <button @click="jumpSearch(1)" class="p-1 text-text" :disabled="chatState.results.length===0"><i data-lucide="chevron-down" class="w-3 h-3"></i></button>
+                    <button @click="toggleSearch" class="p-1 text-accent"><i data-lucide="x" class="w-3 h-3"></i></button>
+                </div>
+
+                <!-- 消息流 -->
+                <main id="chat-container" class="flex-1 overflow-y-auto px-3 py-6 scroll-smooth" @click="chatState.isSearching = false">
+                    <!-- pb-20 确保列表底部不被输入框遮住 -->
+                    <div id="capture-area" class="pb-20">
+                        <transition-group name="fade">
+                            <div v-for="(msg, index) in messages" :key="msg.id" :id="'msg-'+msg.id" class="mb-5 relative group flex" :class="msg.sender === 'me' ? 'justify-end' : 'justify-start'">
+                                <div class="flex w-full gap-3" :class="msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'">
+                                    
+                                    <!-- 头像 -->
+                                    <div v-if="settings.showAvatar" class="shrink-0 w-8 h-8 cursor-pointer" :class="{'opacity-0': !shouldShowAvatar(index)}" @click="editAvatar(msg.sender)">
+                                        <div class="w-full h-full bg-surface border border-border flex items-center justify-center overflow-hidden shadow-sm" :style="{ borderRadius: settings.avatarRadius + '%' }">
+                                            <img v-if="profiles[msg.sender].avatar" :src="profiles[msg.sender].avatar" class="w-full h-full object-cover">
+                                            <span v-else class="text-[11px] text-muted">{{ profiles[msg.sender].name.charAt(0) }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col relative max-w-[calc(100%-48px)]" :class="msg.sender === 'me' ? 'items-end' : 'items-start'">
+                                        <button @click="deleteMsg(msg.id)" class="absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity text-muted hover:text-accent p-1 z-10" :class="msg.sender === 'me' ? '-left-6' : '-right-6'">
+                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        </button>
+
+                                        <!-- 使用用户的日夜气泡 CSS -->
+                                        <div class="message custom-css-target" 
+                                             :class="[msg.sender === 'me' ? 'message-sent' : 'message-received', settings.fontFamily === 'sans' ? 'sans-text' : '']" 
+                                             :style="{ fontSize: settings.fontSize + 'px' }" 
+                                             v-html="highlightText(msg.content, msg.isTyping)">
+                                        </div>
+
+                                        <!-- 时间状态 -->
+                                        <div class="flex items-center gap-2 mt-1 px-1">
+                                            <span class="text-[10px] tracking-wider text-muted/60">{{ formatTime(msg.timestamp) }}</span>
+                                            <span v-if="msg.sender === 'me'" class="text-[10px] tracking-widest transition-colors duration-500" :class="msg.status === 'read' ? 'text-text' : 'text-muted/40'">
+                                                {{ msg.status === 'read' ? '已读' : '未读' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </transition-group>
+                        
+                        <div v-if="messages.length === 0" class="mt-32 flex flex-col items-center justify-center opacity-30 text-muted">
+                            <span class="text-xs tracking-widest">白纸无字 · 静候落笔</span>
+                        </div>
+                    </div>
+                </main>
+
+                <!-- 输入区 (去掉生硬边框与深黑) -->
+                <footer class="absolute bottom-0 left-0 right-0 p-3 bg-surface/80 backdrop-blur-md border-t border-border/40 shrink-0">
+                    <div class="flex items-end gap-2 bg-bg/80 border border-border rounded-xl px-2 py-1.5 focus-within:border-muted transition-colors shadow-sm">
+                        
+                        <button @click="forceReply" :disabled="isTyping" class="p-2 text-muted hover:text-text shrink-0 disabled:opacity-30 flex items-center justify-center" title="倾听">
+                            <i data-lucide="ear" class="w-5 h-5 stroke-[1.5]"></i>
+                        </button>
+
+                        <textarea v-model="inputText" @keydown.enter.prevent="handleSend" @input="saveDraft" rows="1" 
+                                  class="flex-1 py-2 text-[14px] resize-none max-h-24 tracking-wide placeholder:text-muted/50 leading-relaxed"
+                                  placeholder="落墨..."></textarea>
+                        
+                        <button @click="handleSend" class="p-2 text-text hover:text-accent transition-colors shrink-0 flex items-center justify-center" title="发送">
+                            <i data-lucide="send" class="w-4 h-4 stroke-[2]"></i>
+                        </button>
+                    </div>
+                </footer>
+            </div>
+
+            <!-- ================= 语料卷宗 ================= -->
+            <div v-else-if="currentView === 'library'" class="absolute inset-0 flex flex-col z-20 bg-bg">
+                <header class="h-14 flex items-center justify-between px-4 border-b border-border shrink-0 bg-surface">
+                    <button @click="switchView('home')" class="p-2 -ml-2 text-text hover:opacity-60"><i data-lucide="chevron-left" class="w-5 h-5 stroke-[1.5]"></i></button>
+                    <span class="text-[14px] font-medium tracking-widest">语料卷宗</span>
+                    <div class="flex gap-1">
+                        <button @click="exportLibrary" class="p-2 text-muted hover:text-text"><i data-lucide="download" class="w-4 h-4"></i></button>
+                        <label class="p-2 text-muted hover:text-text cursor-pointer">
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            <input type="file" accept=".json" class="hidden" @change="importLibrary">
+                        </label>
+                    </div>
+                </header>
+
+                <div class="px-4 py-3 bg-surface border-b border-border flex items-center gap-2 shrink-0 text-xs">
+                    <div class="flex-1 relative">
+                        <i data-lucide="search" class="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted"></i>
+                        <input v-model="libSearchQuery" type="text" placeholder="筛选..." class="w-full bg-bg border border-border rounded py-1.5 pl-7 pr-2 focus:border-muted transition-colors">
+                    </div>
+                    <button v-if="selectedReplies.size > 0" @click="batchDelete" class="text-accent hover:underline">毁去({{selectedReplies.size}})</button>
+                    <button v-if="selectedReplies.size > 0" @click="batchToggle" class="text-text hover:underline">启/禁</button>
+                </div>
+
+                <main class="flex-1 overflow-y-auto p-4 space-y-8" id="library-groups">
+                    <div v-for="(group, gIdx) in filteredGroups" :key="group.id" class="group-item relative" :data-id="group.id">
+                        <div class="flex items-center justify-between mb-2 group/header border-b border-border/50 pb-2">
+                            <div class="flex items-center gap-2">
+                                <div class="cursor-grab p-1 -ml-1 text-muted hover:text-text drag-handle-group transition-opacity"><i data-lucide="grip-horizontal" class="w-4 h-4"></i></div>
+                                <input v-model="group.name" @blur="debouncedSave" class="font-medium text-[14px] tracking-widest w-32 border-none bg-transparent">
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button @click="addReplyToGroup(group.id)" class="text-muted hover:text-text text-[12px]">添置</button>
+                                <button @click="deleteGroup(group.id)" class="text-muted hover:text-accent"><i data-lucide="trash" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="bg-surface border border-border rounded overflow-hidden reply-list" :data-group-id="group.id">
+                            <div v-if="group.replies.length === 0" class="p-4 text-center text-xs text-muted/50">此卷为空</div>
+                            <div v-for="(reply, rIdx) in group.replies" :key="reply.id" class="reply-item flex items-center gap-3 p-3 border-b border-border/50 last:border-0 transition-colors" :data-id="reply.id" :class="{'bg-bg/60': !reply.enabled}">
+                                <i data-lucide="more-vertical" class="w-3.5 h-3.5 text-muted drag-handle-reply cursor-grab shrink-0"></i>
+                                <input type="checkbox" :value="reply.id" v-model="selectedRepliesArr" class="accent-text shrink-0 w-3 h-3">
+                                <input v-model="reply.text" @blur="debouncedSave" class="flex-1 text-[13px] bg-transparent border-none" :class="{'text-muted line-through': !reply.enabled}">
+                                <!-- 开关 -->
+                                <button @click="reply.enabled = !reply.enabled; debouncedSave()" class="w-7 h-4 rounded-full relative shrink-0 transition-colors border border-border" :class="reply.enabled ? 'bg-text border-text' : 'bg-surface'">
+                                    <div class="absolute top-0.5 left-0.5 w-2.5 h-2.5 rounded-full transition-transform" :class="reply.enabled ? 'translate-x-3 bg-bg' : 'translate-x-0 bg-muted'"></div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button @click="addGroup" class="w-full py-3 border border-dashed border-border rounded text-xs text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-2 tracking-widest mt-4">
+                        <i data-lucide="plus" class="w-3 h-3"></i> 添置新卷
+                    </button>
+                </main>
+            </div>
+
+            <!-- ================= 洞察 ================= -->
+            <div v-else-if="currentView === 'insight'" class="absolute inset-0 flex flex-col z-20 bg-bg">
+                <header class="h-14 flex items-center justify-between px-4 border-b border-border shrink-0 bg-surface">
+                    <button @click="switchView('home')" class="p-2 -ml-2 text-text hover:opacity-60"><i data-lucide="chevron-left" class="w-5 h-5 stroke-[1.5]"></i></button>
+                    <span class="text-[14px] font-medium tracking-widest">洞察</span>
+                    <div class="w-9"></div>
+                </header>
+                <main class="flex-1 overflow-y-auto p-6 space-y-6">
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="bg-surface p-4 rounded border border-border shadow-sm">
+                            <div class="text-xs text-muted mb-2 tracking-widest">只言片语</div>
+                            <div class="text-2xl text-text">{{ messages.length }}</div>
+                        </div>
+                        <div class="bg-surface p-4 rounded border border-border shadow-sm">
+                            <div class="text-xs text-muted mb-2 tracking-widest">初次落笔</div>
+                            <div class="text-[12px] text-text mt-3">{{ statData.firstTime }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-surface p-5 rounded border border-border shadow-sm space-y-4">
+                        <div class="text-[12px] tracking-widest text-muted border-b border-border pb-2">倾诉配比</div>
+                        <div class="flex h-1.5 rounded-full overflow-hidden bg-border mt-4">
+                            <div class="bg-text transition-all" :style="{ width: statData.myRatio + '%' }"></div>
+                            <div class="bg-muted transition-all" :style="{ width: (100 - statData.myRatio) + '%' }"></div>
+                        </div>
+                        <div class="flex justify-between text-[11px] text-text pt-1">
+                            <span>我: {{ statData.myRatio }}%</span>
+                            <span>客: {{ 100 - statData.myRatio }}%</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface p-5 rounded border border-border shadow-sm">
+                        <div class="text-[12px] tracking-widest text-muted border-b border-border pb-2 mb-4">高频思绪</div>
+                        <div class="flex flex-wrap gap-2">
+                            <span v-for="(word, i) in statData.hotWords" :key="i" 
+                                  class="px-2 py-1 bg-bg border border-border rounded-sm text-[12px]"
+                                  :class="i < 3 ? 'text-accent' : 'text-text'">
+                                {{ word.text }} ({{ word.count }})
+                            </span>
+                            <span v-if="statData.hotWords.length===0" class="text-xs text-muted">暂无积淀</span>
+                        </div>
+                    </div>
+                </main>
+            </div>
+
+            <!-- ================= 万象法则(设置) ================= -->
+            <div v-else-if="currentView === 'settings'" class="absolute inset-0 flex flex-col z-20 bg-bg">
+                <header class="h-14 flex items-center justify-between px-4 border-b border-border shrink-0 bg-surface">
+                    <button @click="switchView('home')" class="p-2 -ml-2 text-text hover:opacity-60"><i data-lucide="chevron-left" class="w-5 h-5 stroke-[1.5]"></i></button>
+                    <span class="text-[14px] font-medium tracking-widest">法则</span>
+                    <div class="w-9"></div>
+                </header>
+
+                <main class="flex-1 overflow-y-auto p-4 space-y-6 pb-12">
+                    
+                    <section class="space-y-2">
+                        <h3 class="text-[12px] text-muted tracking-widest pl-1">景 (背景)</h3>
+                        <div class="bg-surface border border-border rounded p-3 flex gap-3 overflow-x-auto">
+                            <label class="w-14 h-20 shrink-0 border border-dashed border-muted flex flex-col items-center justify-center cursor-pointer hover:bg-bg transition-colors">
+                                <i data-lucide="plus" class="w-4 h-4 text-muted"></i>
+                                <input type="file" accept="image/*" class="hidden" @change="uploadBgToLibrary">
+                            </label>
+                            <div class="w-14 h-20 shrink-0 border border-border cursor-pointer flex items-center justify-center text-[11px] text-muted transition-all"
+                                 :class="!settings.bgImage ? 'bg-border text-text' : 'bg-bg'" @click="setBg('')">素宣</div>
+                            
+                            <div v-for="(bg, idx) in settings.bgLibrary" :key="idx" class="w-14 h-20 shrink-0 bg-cover bg-center cursor-pointer relative group"
+                                 :style="{ backgroundImage: `url(${bg})` }"
+                                 :class="settings.bgImage === bg ? 'ring-2 ring-accent' : ''"
+                                 @click="setBg(bg)">
+                                <button @click.stop="removeBg(idx)" class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-surface text-accent rounded-full border border-border opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><i data-lucide="x" class="w-3 h-3"></i></button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="space-y-2">
+                        <h3 class="text-[12px] text-muted tracking-widest pl-1">形 (视觉)</h3>
+                        <div class="bg-surface border border-border rounded overflow-hidden text-[13px]">
+                            <div class="flex items-center justify-between p-4 border-b border-border">
+                                <span>玄青模式 (夜间)</span>
+                                <input type="checkbox" v-model="settings.darkMode" @change="toggleDarkMode" class="accent-text w-4 h-4">
+                            </div>
+                            <div class="flex items-center justify-between p-4 border-b border-border">
+                                <span>字体择选</span>
+                                <select v-model="settings.fontFamily" class="bg-bg border border-border p-1 text-[12px]">
+                                    <option value="serif">宋体 (古典)</option>
+                                    <option value="sans">黑体 (现代)</option>
+                                </select>
+                            </div>
+                            <div class="p-4 border-b border-border flex flex-col gap-3">
+                                <div class="flex justify-between"><span>墨迹大小</span><span>{{settings.fontSize}}px</span></div>
+                                <input type="range" v-model.number="settings.fontSize" min="12" max="22" class="w-full accent-text">
+                            </div>
+                            <div class="flex items-center justify-between p-4 border-b border-border">
+                                <span>展露真容 (头像)</span>
+                                <input type="checkbox" v-model="settings.showAvatar" class="accent-text w-4 h-4">
+                            </div>
+                            <div class="p-4 flex flex-col gap-2">
+                                <span>定制气泡 (CSS注入)</span>
+                                <textarea v-model="settings.customCSS" rows="2" class="w-full bg-bg border border-border p-2 text-[11px] font-mono focus:border-text transition-colors"></textarea>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="space-y-2">
+                        <h3 class="text-[12px] text-muted tracking-widest pl-1">意 (交互)</h3>
+                        <div class="bg-surface border border-border rounded overflow-hidden text-[13px]">
+                            <div class="flex items-center justify-between p-4 border-b border-border">
+                                <span>回声 (音效)</span>
+                                <input type="checkbox" v-model="settings.soundEnabled" @change="toggleSound" class="accent-text w-4 h-4">
+                            </div>
+                            <div class="flex items-center justify-between p-4 border-b border-border">
+                                <span>徐徐道来 (打字动画)</span>
+                                <input type="checkbox" v-model="settings.typewriter" class="accent-text w-4 h-4">
+                            </div>
+                            <div class="flex items-center justify-between p-4 border-b border-border">
+                                <span>语料随缘抛出</span>
+                                <input type="checkbox" v-model="settings.autoReply" class="accent-text w-4 h-4">
+                            </div>
+                            <div class="flex items-center justify-between p-4 border-b border-border">
+                                <span>静候主动搭话</span>
+                                <input type="checkbox" v-model="settings.activeMessage" class="accent-text w-4 h-4">
+                            </div>
+                            <div v-if="settings.activeMessage" class="p-4 pt-2 flex flex-col gap-2 bg-bg">
+                                <div class="flex justify-between text-[12px] text-muted"><span>忍耐间隙</span><span>{{settings.activeInterval}}s</span></div>
+                                <input type="range" v-model.number="settings.activeInterval" min="10" max="300" class="w-full accent-text">
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="space-y-2 mt-6">
+                        <div class="bg-surface border border-border rounded overflow-hidden text-[13px]">
+                            <button @click="clearChat" class="w-full p-4 text-accent hover:bg-accent/5 transition-colors flex justify-between items-center tracking-widest">
+                                焚毁旧梦 (清空记录) <i data-lucide="flame" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </section>
+                </main>
+            </div>
+        </transition>
+    </div>
+</div>
+
+<script>
+const { createApp, ref, reactive, computed, watch, nextTick, onMounted } = Vue;
+const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+
+createApp({
+    setup() {
+        const appState = reactive({ showIntro: true });
+        const currentView = ref('home');
+        const unreadCount = ref(0);
+        
+        const messages = ref([]);
+        const inputText = ref('');
+        const isTyping = ref(false);
+        const activeTimer = ref(null);
+
+        const profiles = reactive({
+            me: { name: '我', avatar: '' },
+            them: { name: '客', avatar: '' }
+        });
+
+        const settings = reactive({
+            darkMode: false, showAvatar: true, avatarRadius: 4, 
+            autoReply: true, activeMessage: false, activeInterval: 60,
+            soundEnabled: true, typewriter: true, 
+            bgImage: '', bgLibrary: [],
+            fontFamily: 'serif', fontSize: 14, customCSS: ''
+        });
+
+        const replyGroups = ref([{ id: genId(), name: '初相识卷', replies: [{ id: genId(), text: '……', enabled: true }] }]);
+
+        const libSearchQuery = ref('');
+        const selectedRepliesArr = ref([]);
+        const selectedReplies = computed(() => new Set(selectedRepliesArr.value));
+
+        const chatState = reactive({ isSearching: false, keyword: '', results: [], currentIdx: 0 });
+
+        const STORAGE_KEY = 'liubai_v3_db';
+        let saveTimeout = null;
+        let audioCtx = null;
+
+        const initData = async () => {
+            try {
+                localforage.config({ name: 'LiuBaiApp', storeName: 'data' });
+                const stored = await localforage.getItem(STORAGE_KEY);
+                if (stored) {
+                    if(stored.messages) messages.value = stored.messages;
+                    if(stored.profiles) Object.assign(profiles, stored.profiles);
+                    if(stored.settings) {
+                        Object.assign(settings, { ...settings, ...stored.settings });
+                        if(settings.darkMode) document.documentElement.classList.add('dark');
+                    }
+                    if(stored.replyGroups) replyGroups.value = stored.replyGroups;
+                }
+                inputText.value = localStorage.getItem('liubai_draft') || '';
+                updateUnread(); applyCSS();
+            } catch (err) { console.error(err); }
+            finally {
+                manageActiveTimer();
+                setTimeout(() => { appState.showIntro = false; }, 4000); 
+            }
+        };
+
+        const debouncedSave = () => {
+            if(saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(async () => {
+                await localforage.setItem(STORAGE_KEY, JSON.parse(JSON.stringify({ messages: messages.value, profiles, settings, replyGroups: replyGroups.value })));
+            }, 500);
+        };
+        watch([messages, profiles, settings], debouncedSave, { deep: true });
+
+        const saveDraft = () => localStorage.setItem('liubai_draft', inputText.value);
+        const applyCSS = () => { const el = document.getElementById('custom-css-injection'); if (el) el.innerHTML = settings.customCSS; };
+        watch(() => settings.customCSS, applyCSS);
+
+        // 音频系统
+        const initAudio = () => { if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } if (audioCtx.state === 'suspended') audioCtx.resume(); };
+        const playTone = (type) => {
+            if (!settings.soundEnabled) return;
+            initAudio();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            if (type === 'send') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+            }
+        };
+
+        // 交谈核心
+        const scrollToBottom = () => nextTick(() => { const el = document.getElementById('chat-container'); if(el) el.scrollTop = el.scrollHeight; });
+        const updateUnread = () => {
+            if (currentView.value === 'chat') { unreadCount.value = 0; messages.value.forEach(m => { if(m.sender === 'me') m.status = 'read'; }); } 
+            else { unreadCount.value = messages.value.filter(m => m.sender === 'them' && !m.isReadFlag).length; }
+        };
+        watch(currentView, (val) => {
+            if(val === 'chat') { messages.value.forEach(m => m.isReadFlag = true); updateUnread(); scrollToBottom(); }
+            else if(val === 'library') nextTick(initSortable);
+            updateIcons();
+        });
+
+        const sendMessage = async (sender, content) => {
+            if (!content) return;
+            if (currentView.value === 'chat') messages.value.forEach(m => { if(m.sender === 'me') m.status = 'read'; });
+            const newMsg = { id: genId(), sender, content: '', timestamp: Date.now(), status: sender === 'me' ? 'sent' : 'read', isReadFlag: currentView.value === 'chat', isTyping: false };
+            messages.value.push(newMsg);
+            
+            playTone(sender === 'me' ? 'send' : 'receive');
+            scrollToBottom(); manageActiveTimer(); updateUnread();
+
+            if (sender === 'them' && settings.typewriter && currentView.value === 'chat') {
+                newMsg.isTyping = true;
+                for (let i = 0; i < content.length; i++) {
+                    newMsg.content += content[i]; await new Promise(r => setTimeout(r, 40)); scrollToBottom();
+                }
+                newMsg.isTyping = false; playTone('receive');
+            } else { newMsg.content = content; }
+        };
+
+        const handleSend = () => {
+            const txt = inputText.value.trim(); if (!txt) return;
+            sendMessage('me', txt); inputText.value = ''; saveDraft();
+            if (settings.autoReply) triggerReply(Math.random() * 1000 + 800);
+        };
+        const forceReply = () => { if (!isTyping.value) triggerReply(500); };
+        
+        const triggerReply = (delayMs) => {
+            isTyping.value = true; scrollToBottom();
+            setTimeout(() => {
+                isTyping.value = false;
+                let pool = []; replyGroups.value.forEach(g => g.replies.forEach(r => { if(r.enabled && r.text) pool.push(r.text); }));
+                sendMessage('them', pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : "……");
+            }, delayMs);
+        };
+        const manageActiveTimer = () => {
+            if (activeTimer.value) clearInterval(activeTimer.value);
+            if (settings.activeMessage) activeTimer.value = setInterval(() => triggerReply(500), settings.activeInterval * 1000);
+        };
+
+        // 搜索与截屏
+        const toggleSearch = () => { chatState.isSearching = !chatState.isSearching; chatState.keyword=''; chatState.results=[]; };
+        const executeSearch = () => {
+            const k = chatState.keyword.trim(); if(!k) { chatState.results=[]; return; }
+            chatState.results = messages.value.filter(m => m.content.includes(k)).map(m=>m.id);
+            if(chatState.results.length>0) { chatState.currentIdx = chatState.results.length-1; jumpToMsg(); }
+        };
+        const jumpSearch = (dir) => {
+            chatState.currentIdx += dir;
+            if(chatState.currentIdx < 0) chatState.currentIdx = chatState.results.length-1;
+            if(chatState.currentIdx >= chatState.results.length) chatState.currentIdx = 0;
+            jumpToMsg();
+        };
+        const jumpToMsg = () => { const id = chatState.results[chatState.currentIdx]; const el = document.getElementById('msg-'+id); if(el) el.scrollIntoView({behavior:'smooth', block:'center'}); };
+        const highlightText = (text, typing) => {
+            let out = text;
+            if(chatState.keyword && chatState.results.length>0) { const reg = new RegExp(`(${chatState.keyword})`, 'gi'); out = text.replace(reg, '<span class="highlight">$1</span>'); }
+            if(typing) out += '<span class="animate-pulse opacity-50">_</span>';
+            return out;
+        };
+
+        const statData = computed(() => {
+            const total = messages.value.length; if(total===0) return { myRatio:50, firstTime:'尚未涉足', hotWords:[] };
+            const myCount = messages.value.filter(m=>m.sender==='me').length; const d = new Date(messages.value[0].timestamp);
+            let allTxt = messages.value.map(m=>m.content).join('');
+            let words = allTxt.match(/[\u4e00-\u9fa5]{2,4}/g) || []; let counts = {};
+            words.forEach(w => { counts[w] = (counts[w]||0)+1; });
+            let hotWords = Object.keys(counts).map(k=>({text:k, count:counts[k]})).sort((a,b)=>b.count-a.count).slice(0,8);
+            return { myRatio: Math.round((myCount/total)*100), firstTime: `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`, hotWords }
+        });
+
+        const captureScreenshot = () => {
+            const el = document.getElementById('capture-area'); if(!el) return;
+            const origStyle = el.style.paddingBottom; el.style.paddingBottom = '0px';
+            html2canvas(el, { backgroundColor: settings.darkMode ? '#1c1c1a' : '#f9f8f4', scale: 2 }).then(canvas => {
+                const a = document.createElement('a'); a.href = canvas.toDataURL('image/png');
+                a.download = `留白长卷_${Date.now()}.png`; a.click(); el.style.paddingBottom = origStyle;
+            });
+        };
+
+        // 语料库拖拽与点击 Bug 已在此修复：加入了 filter 放行交互元素
+        const filteredGroups = computed(() => {
+            const q = libSearchQuery.value.toLowerCase().trim(); if(!q) return replyGroups.value;
+            return replyGroups.value.map(g => ({ ...g, replies: g.replies.filter(r => r.text.toLowerCase().includes(q)) })).filter(g => g.replies.length > 0 || g.name.toLowerCase().includes(q));
+        });
+        const addGroup = () => { replyGroups.value.push({ id: genId(), name: '新卷宗', replies: [] }); debouncedSave(); };
+        const deleteGroup = (id) => { if(confirm('焚毁此卷宗？')) { replyGroups.value = replyGroups.value.filter(g => g.id !== id); debouncedSave(); } };
+        const addReplyToGroup = (gId) => { const g = replyGroups.value.find(x => x.id === gId); if(g) { g.replies.unshift({ id: genId(), text: '', enabled: true }); debouncedSave(); } };
+        const batchDelete = () => { if(!confirm(`毁去所选 ${selectedRepliesArr.value.length} 条？`)) return; replyGroups.value.forEach(g => g.replies = g.replies.filter(r => !selectedReplies.value.has(r.id))); selectedRepliesArr.value=[]; debouncedSave(); };
+        const batchToggle = () => { replyGroups.value.forEach(g => g.replies.forEach(r => { if(selectedReplies.value.has(r.id)) r.enabled = !r.enabled; })); selectedRepliesArr.value=[]; debouncedSave(); };
+
+        let groupSortable = null; let replySortables = [];
+        const initSortable = () => {
+            if(groupSortable) groupSortable.destroy(); replySortables.forEach(s => s.destroy()); replySortables = [];
+            const container = document.getElementById('library-groups'); if(!container) return;
+            groupSortable = new Sortable(container, {
+                animation: 150, handle: '.drag-handle-group', filter: 'input, button', preventOnFilter: false,
+                onEnd: (evt) => { const item = replyGroups.value.splice(evt.oldIndex, 1)[0]; replyGroups.value.splice(evt.newIndex, 0, item); debouncedSave(); }
+            });
+            document.querySelectorAll('.reply-list').forEach(el => {
+                replySortables.push(new Sortable(el, {
+                    group: 'replies', animation: 150, handle: '.drag-handle-reply', filter: 'input, button', preventOnFilter: false,
+                    onEnd: () => {
+                        const newGroups = [];
+                        document.querySelectorAll('.group-item').forEach(gEl => {
+                            const oldG = replyGroups.value.find(g => g.id === gEl.dataset.id); const newR = [];
+                            gEl.querySelectorAll('.reply-item').forEach(rEl => { let rep = null; replyGroups.value.forEach(g => { const f=g.replies.find(x=>x.id===rEl.dataset.id); if(f) rep=f; }); if(rep) newR.push(rep); });
+                            if(oldG) newGroups.push({...oldG, replies: newR});
+                        });
+                        replyGroups.value = newGroups; debouncedSave();
+                    }
+                }));
+            });
+        };
+
+        const exportLibrary = () => {
+            const rawData = JSON.parse(JSON.stringify(replyGroups.value));
+            const blob = new Blob([JSON.stringify(rawData, null, 2)], {type: "application/json"});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `留白卷宗_${Date.now()}.json`; a.click();
+        };
+        const importLibrary = (e) => {
+            const file = e.target.files[0]; if(!file) return; const reader = new FileReader();
+            reader.onload = ev => {
+                try { const data = JSON.parse(ev.target.result); if(Array.isArray(data)) { if(confirm('覆盖原卷宗(确定)还是添置其后(取消)？')) replyGroups.value = data; else replyGroups.value.push(...data); debouncedSave(); nextTick(initSortable); }
+                } catch(err) { alert('经文残缺，无法辨认'); }
+            }; reader.readAsText(file);
+        };
+
+        // 辅助功能
+        const switchView = (v) => currentView.value = v;
+        const formatTime = (ts) => {
+            const d = new Date(ts); const now = new Date();
+            if(d.toDateString() === now.toDateString()) return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+            return `${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+        };
+        const shouldShowAvatar = (idx) => idx===0 || messages.value[idx].sender !== messages.value[idx-1].sender || (messages.value[idx].timestamp - messages.value[idx-1].timestamp > 120000);
+        const deleteMsg = (id) => messages.value = messages.value.filter(m => m.id !== id);
+        
+        const editName = (role) => { const n = prompt(`赐名 ${profiles[role].name}：`, profiles[role].name); if (n&&n.trim()) profiles[role].name = n.trim().substring(0,10); };
+        const editAvatar = (role) => {
+            if(!confirm('选[确定]赋予新象，选[取消]褪去虚妄(移除头像)')) { profiles[role].avatar=''; return; }
+            const input = document.createElement('input'); input.type='file'; input.accept='image/*';
+            input.onchange = e => { const r = new FileReader(); r.onload = ev => profiles[role].avatar = ev.target.result; r.readAsDataURL(e.target.files[0]); }; input.click();
+        };
+
+        const toggleDarkMode = () => { document.documentElement.classList.toggle('dark', settings.darkMode); };
+        const toggleSound = () => { if(settings.soundEnabled) initAudio(); };
+        
+        const uploadBgToLibrary = (e) => { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = ev => { settings.bgLibrary.push(ev.target.result); settings.bgImage = ev.target.result; }; r.readAsDataURL(f); };
+        const setBg = (bg) => settings.bgImage = bg;
+        const removeBg = (idx) => { if(settings.bgImage === settings.bgLibrary[idx]) settings.bgImage=''; settings.bgLibrary.splice(idx,1); };
+        const appBgStyle = computed(() => settings.bgImage ? { backgroundImage: `url(${settings.bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {});
+
+        const clearChat = () => { if(confirm('诸相非相，旧梦将散。确定？')) { messages.value = []; switchView('home'); } };
+        const updateIcons = () => nextTick(() => { if(window.lucide) lucide.createIcons(); });
+
+        onMounted(() => { initData(); setTimeout(updateIcons, 500); document.addEventListener('click', () => { if(settings.soundEnabled && !audioCtx) initAudio(); }, {once:true}); });
+
+        return {
+            appState, currentView, unreadCount, messages, inputText, isTyping, profiles, settings, replyGroups,
+            libSearchQuery, selectedRepliesArr, selectedReplies, chatState, statData,
+            switchView, handleSend, forceReply, deleteMsg, editName, editAvatar, saveDraft,
+            shouldShowAvatar, formatTime, highlightText, toggleSearch, executeSearch, jumpSearch, captureScreenshot,
+            toggleDarkMode, toggleSound, uploadBgToLibrary, setBg, removeBg, appBgStyle, clearChat,
+            addGroup, deleteGroup, addReplyToGroup, batchDelete, batchToggle, exportLibrary, importLibrary, debouncedSave
+        };
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
