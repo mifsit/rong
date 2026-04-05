@@ -5,15 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>无言</title>
-    
+    <title>无界</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/localforage@1.10.0/dist/localforage.min.js"></script>
     <script src="https://unpkg.com/sortablejs@1.15.0/Sortable.min.js"></script>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
@@ -24,327 +23,479 @@
 
     <style>
         :root {
-            --color-bg: #F7F7F7; --color-text: #111111;
-            --color-gray: #555555; --color-border: #DCDCDC;
-            --color-mask: rgba(247, 247, 247, 0.85);
+            --color-bg: #F7F7F7; --color-text: #191919;
+            --color-gray: #666666; --color-border: #D8D8D8;
+            --color-mask: rgba(247, 247, 247, 0.88);
             --font-family: 'Noto Serif SC', serif;
+            --moon-end-opacity: 0.15;
+            --intro-gradient-start: var(--color-bg);
+            --intro-gradient-end: var(--color-border);
         }
         .dark {
-            --color-bg: #121212; --color-text: #EEEEEE;
-            --color-gray: #999999; --color-border: #2A2A2A;
-            --color-mask: rgba(18, 18, 18, 0.85);
+            --color-bg: #0F0F0F; --color-text: #E5E5E5;
+            --color-gray: #8A8A8A; --color-border: #2C2C2C;
+            --color-mask: rgba(15, 15, 15, 0.88);
+            --moon-end-opacity: 0.85;
+            --intro-gradient-start: #000000;
+            --intro-gradient-end: #0a0a0a;
         }
 
-        body { background-color: var(--color-border); color: var(--color-text); margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased; font-family: var(--font-family); }
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
-
+        body { background-color: var(--color-bg); color: var(--color-text); margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased; font-family: var(--font-family); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .app-container { width: 100vw; height: 100vh; position: relative; background-color: var(--color-bg); display: flex; flex-direction: column; overflow: hidden; }
         .safe-top { padding-top: max(16px, env(safe-area-inset-top)); }
-        
         @media (min-width: 768px) { .app-container { width: 414px; height: 896px; border: 1px solid var(--color-border); box-shadow: 0 10px 40px rgba(0,0,0,0.05); } }
 
-        /* ================= 完美还原的气泡样式 ================= */
         .message {
-            position: relative !important;
-            line-height: 1.3 !important;
-            word-break: break-word !important;
-            overflow: visible !important;
-            width: fit-content !important;
-            max-width: 280px !important;
-            border-radius: 4px;
-            box-shadow: none;
-            padding: 8px 11px;
-            border: none;
-            font-size: inherit;
+            position: relative !important; line-height: 1.6 !important; word-break: break-word !important;
+            overflow: visible !important; width: fit-content !important; max-width: 270px !important;
+            border-radius: 2px !important; 
+            padding: 10px 14px; border: none; font-size: 0.95em;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
         }
-        .message.message-sent,
-        .message.message-received {
-            display: inline-block;
-            position: relative;
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
-            width: auto;
-            min-width: 70%;
-            color: #000;
+
+        .message.message-sent, .message.message-received {
+            display: inline-block; position: relative; width: auto; min-width: 10%; color: #111;
         }
-        /* 白昼模式 */
+
         .message.message-sent { background-color: #95ec69; }
         .message.message-received { background-color: #ffffff; }
-        .message::after { content: ""; position: absolute; width: 9px; height: 9px; border-radius: 1.5px; }
-        .message.message-sent::after { right: -3.8px; top: 18px; background-color: #95ec69; transform: translateY(-50%) rotate(45deg); }
-        .message.message-received::after { left: -3.8px; top: 18px; background-color: #ffffff; transform: translateY(-50%) rotate(45deg); }
-        /* 长夜模式 */
-        .dark .message.message-sent { background-color: #59B269; }
-        .dark .message.message-received { background-color: #2c2c2c !important; color: #fff !important; }
+        .message::after { content: ""; position: absolute; width: 7px; height: 7px; border-radius: 1px; }
+        .message.message-sent::after { right: -3px; top: 16px; background-color: #95ec69; transform: translateY(-50%) rotate(45deg); }
+        .message.message-received::after { left: -3px; top: 16px; background-color: #ffffff; transform: translateY(-50%) rotate(45deg); }
+        .dark .message.message-sent { background-color: #59B269; color: #fff; }
+        .dark .message.message-received { background-color: #242424 !important; color: #eee !important; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
         .dark .message.message-sent::after { background-color: #59B269; }
-        .dark .message.message-received::after { background-color: #2c2c2c !important; }
-        /* ====================================================== */
-
-        .highlight { border-bottom: 1px solid #ff4d4f; padding-bottom: 2px; }
-
-        /* 动画过渡 */
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; position: absolute; width: 100%; height: 100%; }
-        .fade-enter-from, .fade-leave-to { opacity: 0; }
-        .msg-list-enter-active, .msg-list-leave-active { transition: all 0.4s ease; }
-        .msg-list-enter-from { opacity: 0; transform: translateY(10px); }
+        .dark .message.message-received::after { background-color: #242424 !important; }
+        .highlight { border-bottom: 1px solid #c76f6f; padding-bottom: 2px; }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease-out, transform 0.3s ease-out; will-change: opacity, transform; position: absolute; width: 100%; height: 100%; z-index: 20;}
+        .fade-enter-from { opacity: 0; transform: scale(0.98); }
+        .fade-leave-to { opacity: 0; transform: scale(1.02); }
+        .toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateY(20px); }
+        .msg-list-enter-active, .msg-list-leave-active { transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .msg-list-enter-from { opacity: 0; transform: translateY(15px); }
         .msg-list-leave-to { opacity: 0; }
-        
-        /* 绝美序幕动画 */
-        .intro-bg { background: #0c0c0c; color: #fff; transition: opacity 1.5s ease; }
-        .svg-ink { fill: none; stroke: #fff; stroke-width: 1; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2000; stroke-dashoffset: 2000; animation: drawPath 3s ease-in-out forwards; }
-        @keyframes drawPath { to { stroke-dashoffset: 0; } }
-        .ink-fill { opacity: 0; animation: fadeIn 2s ease forwards 2s; }
-        @keyframes fadeIn { to { opacity: 1; } }
-        .ink-text { opacity: 0; animation: textFade 2s ease forwards 2.5s; }
-        @keyframes textFade { to { opacity: 1; letter-spacing: 0.8em; transform: translateX(0.4em); } }
+.pear-blossom {
+    position: absolute; background: #fff; border-radius: 40% 60% 60% 40%;
+    opacity: 0.6; animation: blossomFall linear infinite;
+    filter: drop-shadow(0 0 4px rgba(255,255,255,0.8));
+    z-index: 6;
+}
+@keyframes blossomFall {
+    0% { transform: translateY(-10vh) translateX(0) rotate(0deg) scale(0.8); opacity: 0; }
+    20% { opacity: 0.9; }
+    100% { transform: translateY(110vh) translateX(120px) rotate(360deg) scale(1.2); opacity: 0; }
+}
 
-        /* 飘雪效果 */
-        .snow { position: absolute; top: -10px; background: white; border-radius: 50%; opacity: 0.8; animation: fall linear infinite; pointer-events: none; }
-        @keyframes fall { to { transform: translateY(100vh); opacity: 0; } }
+.shooting-star {
+    position: absolute; width: 120px; height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,1), transparent);
+    animation: starShoot 4s ease-in infinite; opacity: 0; transform: rotate(-45deg);
+    z-index: 4;
+}
+@keyframes starShoot {
+    0% { transform: translateX(120vw) translateY(-20vh) rotate(-45deg); opacity: 1; }
+    20% { transform: translateX(-20vw) translateY(120vh) rotate(-45deg); opacity: 0; }
+    100% { opacity: 0; }
+}
 
-        /* 首页东方印章与留白 */
-        .home-seal { position: absolute; right: 10%; top: 15%; width: 40px; height: 40px; border: 1px solid var(--color-border); color: var(--color-gray); font-size: 10px; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; opacity: 0.3; font-family: 'Kaiti', serif; }
-        .home-bg-texture { position: absolute; inset: 0; background-image: radial-gradient(var(--color-border) 1px, transparent 1px); background-size: 40px 40px; opacity: 0.2; pointer-events: none; }
+.intro-bg {
+    background: linear-gradient(180deg, #E6EEF5 0%, #C4D3E3 50%, #A5B8CC 100%);
+    transition: opacity 2s ease-in-out;
+}
+.dark .intro-bg {
+    background: linear-gradient(180deg, #020305 0%, #0A0D14 50%, #000000 100%);
+}
 
-        .grid-item { opacity: 0; transform: translateY(15px); animation: floatUp 0.6s ease forwards; transition: background 0.3s; }
-        @keyframes floatUp { to { opacity: 1; transform: translateY(0); } }
+.ethereal-moon {
+    width: 140px; height: 140px; border-radius: 50%;
+    box-shadow: inset -20px -20px 0 0 rgba(255, 255, 255, 0.95);
+    position: absolute; opacity: 0; background: transparent;
+    animation: moonRise 5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.5s;
+    z-index: 5; transform-origin: center;
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.6));
+}
+.intro-bg .falling-snow { background: var(--color-text); opacity: 0.2; }
+.dark .intro-bg .falling-snow { background: #ffffff; opacity: 0.8; }
 
-        input, textarea, button, select { outline: none; background: transparent; font-family: inherit; }
-        .mag-checkbox { appearance: none; width: 14px; height: 14px; border: 1px solid var(--color-gray); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; }
+@keyframes moonRise {
+    0% { transform: scale(0.8) translateY(100px) rotate(-45deg); opacity: 0; filter: drop-shadow(0 0 0px rgba(255,255,255,0)) blur(10px); }
+    100% { transform: scale(1) translateY(-40px) rotate(-15deg); opacity: 1; filter: drop-shadow(0 0 15px rgba(255,255,255,0.6)) blur(0px); }
+}
+
+.celestial-cloud {
+    position: absolute; border-radius: 50%; background: #ffffff;
+    filter: blur(60px); opacity: 0;
+    animation: cloudDrift 20s ease-in-out infinite alternate forwards 1s;
+}
+@keyframes cloudDrift {
+    0% { transform: translateX(-50px) scale(0.8); opacity: 0.1; }
+    100% { transform: translateX(50px) scale(1.2); opacity: 0.25; }
+}
+.falling-snow.far-far { width: 1.5px; height: 1.5px; opacity: 0.15; filter: blur(3px); z-index: 1; animation-timing-function: linear; }
+.falling-snow.far { width: 3px; height: 3px; opacity: 0.4; filter: blur(1.5px); z-index: 2; box-shadow: 0 0 2px rgba(255,255,255,0.3); }
+.falling-snow.near { width: 5px; height: 5px; opacity: 0.85; filter: blur(0.5px); box-shadow: 0 0 8px rgba(255,255,255,0.9); z-index: 6; }
+
+@keyframes snowFall {
+    0% { transform: translateY(-10vh) translateX(0) rotate(0deg); }
+    100% { transform: translateY(110vh) translateX(80px) rotate(360deg); }
+}
+
+.aurora-glow {
+    position: absolute; width: 100%; height: 100%; top: 0; left: 0;
+    background: radial-gradient(circle at top right, rgba(140, 180, 255, 0.12), transparent 50%),
+                radial-gradient(circle at bottom left, rgba(230, 200, 255, 0.08), transparent 50%);
+    animation: auroraBreathe 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1; pointer-events: none;
+}
+.ethereal-dust {
+    position: absolute; background: #fff; border-radius: 50%; box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+    opacity: 0; animation: stardustTwinkle infinite alternate ease-in-out; z-index: 3;
+}
+@keyframes auroraBreathe { 0% { opacity: 0.3; transform: scale(1); filter: hue-rotate(0deg); } 100% { opacity: 0.8; transform: scale(1.1); filter: hue-rotate(20deg); } }
+@keyframes stardustTwinkle { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1.2); } }
+
+
+.ethereal-orb {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 80vw; height: 80vw; max-width: 400px; max-height: 400px;
+    background: radial-gradient(circle, rgba(150, 150, 150, 0.15) 0%, transparent 60%);
+    filter: blur(40px); animation: orbBreathe 10s ease-in-out infinite alternate; pointer-events: none;
+}
+.dark .ethereal-orb { background: radial-gradient(circle, rgba(200, 220, 255, 0.08) 0%, transparent 60%); }
+@keyframes orbBreathe { 0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.6; } 100% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } }
+.home-menu-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 40px 30px;
+    width: 100%; max-width: 460px; margin: auto; position: relative; z-index: 10;
+}
+.home-menu-card:nth-child(1) { grid-column: span 2; padding: 40px 30px; }
+.home-menu-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+    padding: 30px 26px; cursor: pointer; transition: all 0.5s ease;
+    opacity: 0; box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+.dark .home-menu-card { background: #121212; border: 1px solid #2a2a2a; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+
+.home-menu-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--color-text);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.06);
+}
+.home-icon-wrap { margin-bottom: 20px; text-align: left; opacity: 0.8; stroke-width: 1.2px; transition: transform 0.5s; color: var(--color-text); }
+.home-menu-card:hover .home-icon-wrap { transform: scale(1.1); stroke-width: 1.5px; }
+
+.home-menu-name { font-size: 16px; letter-spacing: 0.4em; color: var(--color-text); font-weight: 500; text-indent: 0.2em; position: z-index 2; text-shadow: 0 1px 2px var(--color-bg); }
+
+.home-menu-line {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: var(--color-gray); opacity: 0.2; transition: all 0.4s;
+}
+.home-menu-card:hover .home-menu-line { background: var(--color-text); opacity: 1; }
+
+.home-menu-decor {
+    position: absolute; right: -20px; bottom: -20px; width: 80px; height: 80px;
+    border-radius: 50%; border: 1px solid var(--color-border); opacity: 0.4;
+    transition: all 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); pointer-events: none;
+}
+.home-menu-card:hover .home-menu-decor { transform: scale(1.8); border-width: 2px; opacity: 0.1; }
+
+@keyframes floatUpHome { 0% { opacity: 0; transform: translateY(40px); filter: blur(4px); } 100% { opacity: 1; transform: translateY(0); filter: blur(0px); } }
+
+        .ink-input { background: transparent; border: none; box-shadow: inset 0 -1px 8px rgba(0,0,0,0.03); transition: box-shadow 0.3s ease; border-radius: 12px; padding: 12px 16px; outline: none; resize: none; color: var(--color-text); }
+        .ink-input:focus { box-shadow: inset 0 -2px 12px rgba(0,0,0,0.06); }
+        .dark .ink-input { box-shadow: inset 0 -1px 8px rgba(255,255,255,0.02); }
+        .dark .ink-input:focus { box-shadow: inset 0 -2px 12px rgba(255,255,255,0.05); }
+        .mag-checkbox { appearance: none; width: 14px; height: 14px; border: 1px solid var(--color-gray); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; background: transparent; border-radius: 2px;}
         .mag-checkbox:checked { background: var(--color-text); border-color: var(--color-text); }
         .mag-checkbox:checked::after { content: ''; width: 4px; height: 8px; border: solid var(--color-bg); border-width: 0 1px 1px 0; transform: rotate(45deg) translateY(-1px); }
-        
-        /* 落笔中动画 */
-        .typing-dots span { animation: typingBlink 1.4s infinite both; }
-        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typingBlink { 0%, 100% { opacity: 0.2; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-2px); } }
-
-        /* 悬浮音乐匣 */
-        .music-widget { touch-action: none; transition: width 0.3s, height 0.3s, border-radius 0.3s; }
-        .music-spin { animation: spin 8s linear infinite; }
+        .ink-brush-anim { display: inline-flex; overflow: hidden; white-space: nowrap; animation: revealInk 1.5s steps(40, end) infinite;}
+        @keyframes revealInk { 0% { width: 0; opacity: 0; } 50% { width: 100%; opacity: 1; } 100% { width: 100%; opacity: 0; } }
+        .music-widget { touch-action: none; transition: width 0.3s cubic-bezier(0.2,0.8,0.2,1), height 0.3s cubic-bezier(0.2,0.8,0.2,1); }
+        .music-spin { animation: spin 4s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .drawer-up-enter-active, .drawer-up-leave-active { transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
         .drawer-up-enter-from, .drawer-up-leave-to { transform: translateY(100%); }
+        .glass-mask { background: var(--color-mask); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .borderless-group { padding: 8px 0; margin-bottom: 24px; }
+        .borderless-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 8px; font-size: 13px; letter-spacing: 0.3em; transition: all 0.3s; position: relative; }
+        .borderless-item::after { content: ''; position: absolute; bottom: 0; left: 8px; right: 8px; height: 1px; background: var(--color-border); opacity: 0.3; }
+        .borderless-item:last-child::after { display: none; }
+        .borderless-item span { color: var(--color-gray); transition: color 0.3s; }
+        .borderless-item:hover span { color: var(--color-text); }
 
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; opacity: 0; position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
-        .glass-mask { background: var(--color-mask); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
     </style>
     <style id="custom-font-injection"></style>
     <style id="dynamic-bubble-style"></style>
 </head>
-<body class="flex justify-center items-center h-screen w-screen transition-colors duration-500 select-none">
+<body class="flex justify-center items-center h-screen w-screen transition-colors duration-500 select-none text-[14px]">
 
 <div id="app" v-cloak :class="{'dark': settings.darkMode}" :style="customStyleVars">
+
+    <transition name="toast-fade">
+        <div v-if="toast.show" class="fixed inset-0 z-[9999] flex items-start justify-center pt-[20vh] pointer-events-none">
+            <div class="px-6 py-4 bg-bg flex items-center gap-4 shadow-2xl rounded-sm pointer-events-auto max-w-[80vw]">
+                <span class="w-1.5 h-1.5 bg-text rotate-45 transform shrink-0"></span>
+                <span class="text-[12px] tracking-[0.2em] font-light">{{ toast.msg }}</span>
+            </div>
+        </div>
+    </transition>
+    <div v-if="appState.showIntro" class="intro-bg fixed inset-0 z-[1000] flex flex-col items-center justify-center overflow-hidden pointer-events-none duration-[1500ms]" :class="{'opacity-0': appState.introFading}">
+        <div class="aurora-glow"></div>
+               <div v-for="n in 50" :key="'dust'+n" class="ethereal-dust" :style="{ left: Math.random()*100 + 'vw', top: Math.random()*100 + 'vh', width: Math.random()*1.5 + 'px', height: Math.random()*1.5 + 'px', animationDuration: Math.random()*4+2 + 's', animationDelay: Math.random()*5 + 's' }"></div>
+               <div v-for="n in 35" :key="'snowFarFar'+n" class="falling-snow far-far absolute bg-white rounded-full" :style="{ left: Math.random()*100 + 'vw', top: (Math.random()*-50) + 'vh', animationDuration: Math.random()*15+15 + 's', animationDelay: Math.random()*3 + 's', animationName: 'snowFall', animationIterationCount: 'infinite' }"></div>
+               <div v-for="n in 25" :key="'snowFar'+n" class="falling-snow far absolute bg-white rounded-full" :style="{ left: Math.random()*100 + 'vw', top: (Math.random()*-30) + 'vh', animationDuration: Math.random()*10+8 + 's', animationDelay: Math.random()*2 + 's', animationName: 'snowFall', animationIterationCount: 'infinite' }"></div>
+               <div v-for="n in 15" :key="'snowNear'+n" class="falling-snow near absolute bg-white rounded-full" :style="{ left: Math.random()*100 + 'vw', top: (Math.random()*-20) + 'vh', animationDuration: Math.random()*6+5 + 's', animationDelay: Math.random()*1 + 's', animationName: 'snowFall', animationIterationCount: 'infinite' }"></div>
+       
+        <div class="shooting-star" style="top: 25%; left: 90%; animation-delay: 2.8s;"></div>
+        <div class="relative flex items-center justify-center w-full h-full">
+            <div class="celestial-cloud w-[300px] h-[150px] top-[30%] left-[10%]"></div>
+            <div class="celestial-cloud w-[400px] h-[200px] top-[40%] right-[5%]" style="animation-duration: 25s; opacity: 0.1;"></div>
+            <div class="ethereal-moon"></div>
+        </div>
+        <div class="ink-text text-[16px] z-20 absolute top-[68%] text-text tracking-[0.8em] drop-shadow-md font-light text-center w-full leading-loose transition-colors">
+            明月似珺照我心<br>
+            <span class="text-[11px] opacity-70 tracking-[1em] block mt-4">清风如绫拂我面</span>
+        </div>
+
+    </div>
     
-    <!-- 浮光掠影 -->
-    <transition name="fade">
-        <div v-if="toast.show" class="fixed top-24 left-0 w-full z-[999] flex justify-center pointer-events-none">
-            <div class="px-6 py-3 bg-bg border border-border flex items-center gap-4 shadow-lg shadow-black/5">
-                <span class="w-1.5 h-1.5 bg-text rounded-full"></span>
-                <span class="text-[12px] tracking-[0.3em] font-light">{{ toast.msg }}</span>
-            </div>
-        </div>
-    </transition>
+    <div v-show="settings.showMusic" class="fixed z-[100] touch-none transition-all duration-[400ms] cubic-bezier(0.3, 0.9, 0.3, 1) flex"
+    :class="musicState.minimized ? 'w-[52px] h-[52px]' : 'w-[90%] max-w-[360px] min-h-[140px]'"
+    :style="{ left: musicState.minimized ? musicState.x+'px' : '50%', top: musicState.minimized ? musicState.y+'px' : 'calc(100% - max(150px, env(safe-area-inset-bottom) + 150px))', transform: musicState.minimized ? 'none' : 'translateX(-50%)' }"
+    @mousedown="startDrag" @touchstart="startDrag">
+   <div class="w-full h-full bg-bg/85 backdrop-blur-3xl shadow-[0_15px_40px_rgba(0,0,0,0.15),inset_0_1px_1px_rgba(255,255,255,0.3)] border border-border/50 overflow-hidden flex flex-col relative"
+        :class="musicState.minimized ? 'rounded-full justify-center items-center hover:scale-105 cursor-grab border-[2px]' : 'rounded-[20px] px-6 py-5 justify-between'">
 
-    <!-- 绝美手绘序幕 -->
-    <div v-if="appState.showIntro" class="intro-bg fixed inset-0 z-[1000] flex flex-col items-center justify-center overflow-hidden" :class="{'opacity-0 pointer-events-none': appState.introFading}">
-        <!-- 飘雪 -->
-        <div v-for="n in 30" :key="n" class="snow" :style="{ left: Math.random()*100 + 'vw', width: Math.random()*4+1 + 'px', height: Math.random()*4+1 + 'px', animationDuration: Math.random()*3+2 + 's', animationDelay: Math.random()*2 + 's' }"></div>
-        
-        <svg width="240" height="240" viewBox="0 0 200 200" class="mb-8">
-            <!-- 新月 -->
-            <path class="svg-ink" d="M 140 40 A 30 30 0 1 0 160 80 A 40 40 0 1 1 140 40 Z"/>
-            <path class="ink-fill" fill="#fff" d="M 140 40 A 30 30 0 1 0 160 80 A 40 40 0 1 1 140 40 Z" opacity="0.8"/>
-            <!-- 远山 -->
-            <path class="svg-ink" d="M 20 160 L 60 110 L 90 140 L 140 80 L 180 160 Z"/>
-            <!-- 孤鸟 -->
-            <path class="svg-ink" d="M 50 60 Q 60 50 70 60 Q 60 65 50 60 M 70 60 Q 80 50 90 60 Q 80 65 70 60" transform="scale(0.6) translate(30, 20)"/>
-            <path class="svg-ink" d="M 80 80 Q 90 70 100 80 Q 90 85 80 80 M 100 80 Q 110 70 120 80 Q 110 85 100 80" transform="scale(0.5) translate(80, 50)"/>
-            <!-- 祥云 -->
-            <path class="svg-ink" d="M 30 90 Q 40 80 50 90 Q 60 80 70 90 Q 60 100 50 100 Q 40 100 30 90 Z"/>
-            <!-- 羽毛笔 (意象) -->
-            <path class="svg-ink" d="M 90 180 C 100 130 130 100 160 110 C 130 120 110 150 90 180 Z"/>
-            <line class="svg-ink" x1="90" y1="180" x2="160" y2="110" stroke-width="0.5"/>
-        </svg>
-        <div class="ink-text text-[16px] font-light tracking-[0.8em] text-white">无 言</div>
-    </div>
+      <div v-show="musicState.minimized" class="pointer-events-none text-text opacity-90 drop-shadow-md">
+          <i data-lucide="music" class="w-6 h-6 stroke-[1.5]" :class="{'animate-pulse': audio && !audio.paused}"></i>
+      </div>
+      <div v-show="!musicState.minimized" class="w-full h-full flex flex-col justify-between gap-4">
 
-    <!-- 梵音匣 (悬浮音乐) -->
-    <div v-show="settings.showMusic" class="fixed z-[90] music-widget flex items-center justify-center bg-bg border border-border shadow-xl shadow-black/10 overflow-hidden"
-         :class="musicState.minimized ? 'rounded-full w-12 h-12 cursor-pointer' : 'rounded-md w-[85%] max-w-[320px] h-32 flex-col p-4'"
-         :style="{ left: musicState.x + 'px', top: musicState.y + 'px', transform: musicState.minimized ? 'none' : 'translate(-50%, -50%)', left: musicState.minimized ? musicState.x+'px' : '50%', top: musicState.minimized ? musicState.y+'px' : '50%' }"
-         @mousedown="startDrag" @touchstart="startDrag">
-        
-        <template v-if="musicState.minimized">
-            <i data-lucide="music" class="w-5 h-5 stroke-[1.5] text-text" :class="{'music-spin': audio && !audio.paused}"></i>
-        </template>
-
-        <template v-else>
-            <button @click.stop="musicState.minimized = true" class="absolute top-3 right-3 text-gray p-2 hover:text-text"><i data-lucide="minimize-2" class="w-4 h-4 stroke-[1.5]"></i></button>
-            <div class="flex-1 flex flex-col justify-center w-full text-center px-6 mt-1">
-                <span class="text-[13px] tracking-widest text-text truncate w-full font-medium">{{ currentSong.title || '无音' }}</span>
-                <span class="text-[10px] tracking-widest text-gray truncate w-full mt-1">{{ currentSong.sub || '静待落音' }}</span>
-            </div>
-            <div class="flex items-center justify-center gap-8 w-full mt-3 shrink-0 pb-1">
-                <button @click.stop="togglePlayMode" class="text-gray hover:text-text transition-colors">
-                    <i v-if="musicState.mode===0" data-lucide="list-ordered" class="w-4 h-4 stroke-[1.5]"></i>
-                    <i v-if="musicState.mode===1" data-lucide="shuffle" class="w-4 h-4 stroke-[1.5]"></i>
-                    <i v-if="musicState.mode===2" data-lucide="repeat-1" class="w-4 h-4 stroke-[1.5]"></i>
+          <div class="w-full flex-1 flex flex-col justify-start">
+              <span class="text-[16px] tracking-[0.2em] text-text font-medium font-serif mb-2 leading-tight">{{ currentSong.title || '空匣无音' }}</span>
+              <span class="text-[12px] tracking-widest text-gray font-sans whitespace-normal break-words leading-relaxed opacity-90">{{ currentSong.sub || '静待落韵...' }}</span>
+          </div>
+          <div class="flex items-center justify-between border-t border-border/30 pt-4 mt-1">
+            <div class="flex items-center gap-5">
+                 <button @click.stop="togglePlayMode" class="text-gray hover:text-text transition-colors">
+                    <i v-show="musicState.mode === 0" data-lucide="repeat" class="w-4 h-4 stroke-[1.5]"></i>
+                    <i v-show="musicState.mode === 1" data-lucide="shuffle" class="w-4 h-4 stroke-[1.5]"></i>
+                    <i v-show="musicState.mode === 2" data-lucide="repeat-1" class="w-4 h-4 stroke-[1.5]"></i>
                 </button>
-                <button @click.stop="prevSong" class="text-text hover:opacity-50"><i data-lucide="skip-back" class="w-5 h-5 stroke-[1.5]"></i></button>
-                <button @click.stop="togglePlay" class="w-12 h-12 border border-border flex items-center justify-center rounded-full text-text hover:bg-border transition-colors">
-                    <i :data-lucide="audio && !audio.paused ? 'pause' : 'play'" class="w-5 h-5 stroke-[1.5]" :class="{'ml-1': audio && audio.paused}"></i>
+                <button @click.stop="togglePlay" class="text-text hover:opacity-50 transition-opacity w-10 h-10 flex items-center justify-center">
+                    <span v-show="isPlaying"><i data-lucide="pause" class="w-6 h-6 stroke-[1.5]"></i></span>
+                    <span v-show="!isPlaying"><i data-lucide="play" class="w-6 h-6 stroke-[1.5] ml-1"></i></span>
                 </button>
-                <button @click.stop="nextSong" class="text-text hover:opacity-50"><i data-lucide="skip-forward" class="w-5 h-5 stroke-[1.5]"></i></button>
-                <button @click.stop="showPlaylist = true" class="text-gray hover:text-text transition-colors"><i data-lucide="list-music" class="w-4 h-4 stroke-[1.5]"></i></button>
+                <button @click.stop="nextSong" class="text-gray hover:text-text transition-colors"><i data-lucide="skip-forward" class="w-4 h-4 stroke-[1.5]"></i></button>
             </div>
-        </template>
-    </div>
+            <div class="flex items-center gap-5">
 
-    <!-- 藏音阁 (播放列表) -->
-    <transition name="drawer-up">
-        <div v-if="showPlaylist" class="fixed inset-0 z-[100] bg-bg flex flex-col safe-top">
-            <header class="h-16 flex items-center justify-between px-6 border-b border-border shrink-0">
-                <span class="text-[14px] tracking-[0.3em] font-medium">藏音阁</span>
-                <div class="flex gap-5">
-                    <button @click="addSong" class="text-text hover:opacity-50"><i data-lucide="plus" class="w-5 h-5 stroke-[1.5]"></i></button>
-                    <button @click="showPlaylist = false" class="text-text hover:opacity-50"><i data-lucide="chevron-down" class="w-6 h-6 stroke-[1.5]"></i></button>
-                </div>
-            </header>
-            <div class="flex-1 overflow-y-auto p-2">
-                <div v-for="(song, idx) in playlist" :key="idx" class="flex items-center justify-between p-5 border-b border-border/50 cursor-pointer hover:bg-border/20 transition-colors" @click="playSong(idx)">
-                    <div class="flex flex-col max-w-[70%]">
-                        <span class="text-[13px] tracking-widest font-medium truncate" :class="musicState.currentIndex === idx ? 'text-text' : 'text-gray'">{{ song.title }}</span>
-                        <span class="text-[10px] tracking-widest text-gray/60 truncate mt-1.5">{{ song.sub }}</span>
+                  <button @click.stop="showPlaylist = true" class="text-text hover:opacity-50 transition-opacity"><i data-lucide="list-music" class="w-5 h-5 stroke-[1.5]"></i></button>
+                  <button @click.stop="musicState.minimized = true" class="text-gray/50 hover:text-text transition-colors"><i data-lucide="minimize-2" class="w-5 h-5 stroke-[1.5]"></i></button>
+              </div>
+          </div>
+
+      </div>
+   </div>
+</div>
+
+
+    
+       <transition name="fade">
+        <div v-show="showPlaylist" class="fixed inset-0 z-[110] glass-mask flex flex-col justify-end" @click.self="showPlaylist = false">
+            <div class="bg-bg h-[75vh] flex flex-col rounded-t-3xl shadow-[0_-20px_60px_rgba(0,0,0,0.1)] border border-border/20 border-b-0" @click.stop>
+                <header class="h-[72px] flex items-center justify-between px-6 shrink-0 border-b border-border/10 bg-bg z-[111]">
+                    <div class="flex items-center gap-3">
+                        <span class="w-1 h-3 bg-text rounded-full"></span>
+                        <span class="text-[14px] tracking-[0.4em] font-medium text-text">曲目谱册</span>
                     </div>
-                    <div class="flex items-center gap-5">
-                        <button v-if="song.isCustom" @click.stop="editSong(idx)" class="text-gray hover:text-text"><i data-lucide="edit-2" class="w-4 h-4 stroke-[1.5]"></i></button>
-                        <button v-if="song.isCustom" @click.stop="removeSong(idx)" class="text-gray hover:text-text"><i data-lucide="trash" class="w-4 h-4 stroke-[1.5]"></i></button>
-                        <i v-if="musicState.currentIndex === idx && audio && !audio.paused" data-lucide="bar-chart-2" class="w-5 h-5 stroke-[1.5] text-text"></i>
+                    <div class="flex items-center gap-4">
+                        <button @click="batchAddSongs" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-text text-bg hover:scale-105 transition-all relative z-[115] shadow-[0_4px_10px_rgba(0,0,0,0.1)] cursor-pointer">
+                            <span class="text-[12px] tracking-widest font-medium">万象汇</span>
+                        </button>
+
+                        <button @click.stop="addSong" class="text-gray hover:text-text p-2 relative z-[115]">
+                            <i data-lucide="plus" class="w-5 h-5 stroke-[1.5]"></i>
+                        </button>
+                        <button @click.stop="showPlaylist = false" class="text-text hover:text-red-400 p-2 ml-1 relative z-[115] transition-transform hover:translate-y-1 mt-1">
+                            <i data-lucide="chevron-down" class="w-6 h-6 stroke-[1.5]"></i>
+                        </button>
                     </div>
+                </header>
+                
+
+                <div class="flex-1 overflow-y-auto px-6 pb-12 pt-4 space-y-6">
+                    <div v-for="(song, idx) in playlist" :key="idx" class="flex items-center justify-between cursor-pointer group" @click="playSong(idx)">
+                        <div class="flex flex-col max-w-[70%]">
+                            <span class="text-[14px] tracking-widest font-medium truncate transition-colors" :class="musicState.currentIndex === idx ? 'text-text' : 'text-gray group-hover:text-text'">{{ song.title }}</span>
+                            <span class="text-[11px] tracking-widest text-gray/50 truncate mt-1.5 font-sans">{{ song.sub }}</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <i v-if="musicState.currentIndex === idx && audio && !audio.paused" data-lucide="waves" class="w-4 h-4 stroke-[1.5] text-text border-text"></i>
+                            <button v-if="song.isCustom" @click.stop="editSong(idx)" class="text-gray/30 hover:text-gray p-1 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="edit-3" class="w-4 h-4 stroke-[1.2]"></i></button>
+                            <button v-if="song.isCustom" @click.stop="removeSong(idx)" class="text-gray/30 hover:text-gray p-1 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="x" class="w-4 h-4 stroke-[1.2]"></i></button>
+                        </div>
+                    </div>
+                    <div v-if="playlist.length===0" class="text-center mt-32 text-[12px] text-gray tracking-[0.5em]">虚空无音</div>
                 </div>
             </div>
         </div>
     </transition>
 
-    <!-- 全局交互弹窗 -->
+
     <transition name="fade">
-        <div v-if="modal.show" class="fixed inset-0 z-[110] flex items-center justify-center glass-mask px-6" @click.self="closeModal">
-            <div class="border border-border p-8 w-full max-w-[320px] bg-bg shadow-2xl">
-                <h3 class="text-[14px] tracking-[0.3em] mb-6 font-medium flex items-center gap-3"><span class="w-1.5 h-1.5 bg-text rotate-45"></span>{{ modal.title }}</h3>
-                <p v-if="modal.message" class="text-[12px] text-gray mb-8 leading-relaxed whitespace-pre-line tracking-wide">{{ modal.message }}</p>
-                
-                <input v-if="modal.type === 'prompt'" v-model="modal.input" class="w-full border-b border-border py-2 text-[13px] mb-8 focus:border-text transition-colors tracking-widest bg-transparent" :placeholder="modal.placeholder">
-                
-                <select v-if="modal.type === 'select'" v-model="modal.input" class="w-full border-b border-border py-2 text-[13px] mb-8 focus:border-text transition-colors tracking-widest bg-transparent appearance-none">
+        <div v-if="modal.show" class="fixed inset-0 z-[120] flex items-center justify-center glass-mask px-6" @click.self="closeModal">
+            <div class="p-8 w-full max-w-[320px] bg-bg shadow-[0_20px_60px_rgba(0,0,0,0.1)] relative rounded-xl border border-border/30">
+                <button @click="closeModal" class="absolute top-5 right-5 text-gray hover:text-text"><i data-lucide="x" class="w-4 h-4 stroke-[1.5]"></i></button>
+                <h3 class="text-[13px] tracking-[0.4em] mb-8 font-medium flex items-center gap-3"><span class="w-1 h-1 bg-text rotate-45 transform"></span>{{ modal.title }}</h3>
+                <p v-if="modal.message" class="text-[13px] text-gray mb-8 leading-loose tracking-widest whitespace-pre-line">{{ modal.message }}</p>
+
+                <input v-if="modal.type === 'prompt'" v-model="modal.input" class="w-full border-b border-border/50 py-3 text-[14px] mb-8 focus:border-text transition-colors tracking-widest bg-transparent outline-none" :placeholder="modal.placeholder">
+
+                <select v-if="modal.type === 'select'" v-model="modal.input" class="w-full border-b border-border/50 py-3 text-[14px] mb-8 focus:border-text transition-colors tracking-widest bg-transparent appearance-none outline-none">
                     <option value="" disabled>{{ modal.placeholder }}</option>
                     <option v-for="opt in modal.options" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                 </select>
 
-                <textarea v-if="modal.type === 'batchAdd'" v-model="modal.input" rows="5" placeholder="每行一语..." class="w-full border border-border p-4 text-[13px] focus:border-text transition-colors mb-6 resize-none leading-relaxed tracking-wide bg-transparent"></textarea>
-                
-                <div v-if="modal.type === 'profile'" class="mb-8 space-y-6 text-[13px]">
+                <textarea v-if="modal.type === 'batchAdd'" v-model="modal.input" rows="6" placeholder="每行一言..." class="w-full bg-border/5 p-4 text-[13px] focus:border-text transition-colors mb-6 resize-none leading-relaxed tracking-wide rounded-md outline-none border border-transparent hover:border-border/50"></textarea>
+                <textarea v-if="modal.type === 'batchAddMusic'" v-model="modal.input" rows="6" placeholder=" " class="w-full bg-border/5 p-4 text-[12px] font-mono focus:border-text transition-colors mb-6 resize-none leading-relaxed tracking-wide rounded-md outline-none border border-transparent hover:border-border/50"></textarea>
+
+                <div v-if="modal.type === 'profile'" class="mb-8 space-y-8 text-[13px]">
                     <div>
                         <span class="text-gray block mb-2 tracking-[0.3em] text-[10px]">名讳</span>
-                        <input v-model="modal.profileData.name" class="w-full border-b border-border py-1 focus:border-text tracking-widest bg-transparent">
+                        <input v-model="modal.profileData.name" class="w-full border-b border-border/50 py-2 focus:border-text tracking-widest bg-transparent outline-none text-[15px]">
                     </div>
                     <div>
-                        <span class="text-gray block mb-3 tracking-[0.3em] text-[10px]">容颜</span>
+                        <span class="text-gray block mb-4 tracking-[0.3em] text-[10px]">神辉</span>
                         <div class="flex items-center gap-6">
-                            <label class="border border-border px-5 py-2 hover:border-text transition-colors cursor-pointer tracking-[0.2em] text-[11px]">
-                                绘面<input type="file" accept="image/*" @change="e => handleImgUpload(e, 'avatar')" class="hidden">
+                            <label class="px-5 py-2 hover:bg-border/30 transition-colors cursor-pointer tracking-[0.2em] text-[12px] rounded border border-border/50">
+                                研墨<input type="file" accept="image/*" @change="e => handleImgUpload(e, 'avatar')" class="hidden">
                             </label>
-                            <button @click="modal.profileData.avatar=''" class="text-gray hover:text-text tracking-widest transition-colors text-[11px]">拂去</button>
+                            <button @click="modal.profileData.avatar=''" class="text-gray hover:text-text tracking-widest transition-colors text-[12px]">拂尘</button>
                         </div>
                     </div>
                 </div>
 
                 <div v-if="modal.type === 'song'" class="mb-8 space-y-6 text-[13px]">
-                    <div><input v-model="modal.songData.title" placeholder="曲名" class="w-full border-b border-border py-2 focus:border-text tracking-widest bg-transparent"></div>
-                    <div><input v-model="modal.songData.sub" placeholder="副语" class="w-full border-b border-border py-2 focus:border-text tracking-widest bg-transparent"></div>
-                    <div><input v-model="modal.songData.url" placeholder="音律卷轴 (URL)" class="w-full border-b border-border py-2 focus:border-text tracking-widest bg-transparent font-sans text-[11px]"></div>
+                    <div><input v-model="modal.songData.title" placeholder="名录" class="w-full border-b border-border/50 py-3 focus:border-text tracking-widest bg-transparent outline-none"></div>
+                    <div><input v-model="modal.songData.sub" placeholder="残语" class="w-full border-b border-border/50 py-3 focus:border-text tracking-widest bg-transparent outline-none"></div>
+                    <div><input v-model="modal.songData.url" placeholder="音脉" class="w-full border-b border-border/50 py-3 focus:border-text tracking-widest bg-transparent font-sans text-[12px] outline-none"></div>
                 </div>
 
-                <div class="flex justify-end gap-6 text-[12px] tracking-[0.3em]">
-                    <button @click="closeModal" class="text-gray hover:text-text px-3 py-1">舍</button>
-                    <button @click="confirmModal" class="bg-text text-bg px-5 py-1.5 hover:opacity-80">印</button>
+                <div class="flex justify-end gap-6 text-[12px] tracking-[0.4em]">
+                    <button @click="closeModal" class="text-gray hover:text-text px-2 py-1">弃去</button>
+                    <button @click="confirmModal" class="bg-text text-bg px-6 py-2.5 hover:opacity-80 rounded shadow-sm">应许</button>
                 </div>
             </div>
         </div>
     </transition>
 
-    <div class="app-container text-[14px]">
-        
-        <!-- 首页 -->
-        <transition name="fade">
-            <div v-show="currentView === 'home'" class="absolute inset-0 flex flex-col z-10 p-8 bg-bg safe-top">
-                <div class="home-bg-texture"></div>
-                <div class="home-seal">无言</div>
-                
-                <div class="mt-20 mb-16 flex flex-col items-center z-10">
-                    <span class="text-[16px] text-text tracking-[1em] font-light ml-4">静水流深</span>
-                </div>
+    <div class="app-container">
 
-                <div class="grid grid-cols-2 gap-6 flex-1 content-start z-10 px-4">
-                    <div v-for="(item, idx) in homeMenus" :key="idx" class="grid-item aspect-square flex flex-col items-center justify-center cursor-pointer group border border-border/50 bg-bg hover:border-text transition-all" :style="`animation-delay: ${0.1 + idx*0.05}s`" @click="switchView(item.view)">
-                        <i :data-lucide="item.icon" class="w-7 h-7 stroke-[1.2] text-gray group-hover:text-text mb-4 transition-colors"></i>
-                        <span class="text-[12px] tracking-[0.4em] text-gray group-hover:text-text transition-colors ml-1">{{ item.name }}</span>
-                        <div v-if="item.view === 'chat' && unreadCount > 0" class="absolute top-4 right-4 w-2 h-2 bg-text rounded-full"></div>
+        <transition name="fade">
+            <div v-show="currentView === 'home'" class="absolute inset-0 flex flex-col justify-center items-center z-10 bg-bg safe-top overflow-hidden relative">
+                <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-border/10 via-bg to-bg pointer-events-none z-0"></div>
+                <div class="ethereal-orb animate-pulse duration-[10000ms] opacity-60"></div>
+
+                <div class="absolute top-24 text-center z-10 flex flex-col items-center justify-center pointer-events-none">
+                    <h1 class="text-[28px] font-serif text-text tracking-[0.8em] font-light mb-4 text-shadow-sm ml-2">无界</h1>
+                    <p class="text-[11px] tracking-[1.2em] text-gray opacity-70 ml-3">心之所向皆为生</p>
+                </div>
+                <div class="w-full max-w-[320px] flex flex-col gap-5 z-10 relative mt-28">
+                    <div v-for="(item, idx) in homeMenus" :key="idx"
+                         class="group relative w-full flex items-center justify-between p-4 rounded-xl bg-bg/40 backdrop-blur-md border border-border/40 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_15px_35px_rgba(255,255,255,0.03)] hover:border-text/30 hover:bg-bg/80"
+                         :style="`animation: floatUpHome 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards ${0.1 + idx*0.12}s; opacity: 0;`"
+                         @click="switchView(item.view)">
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-text/[0.04] to-transparent -translate-x-[100%] group-hover:translate-x-[100%] transition-transform duration-[1200ms] ease-in-out pointer-events-none border-0"></div>
+
+                        <div class="flex items-center gap-5 relative z-10">
+                            <div class="w-11 h-11 rounded-[10px] bg-border/20 flex items-center justify-center text-text group-hover:scale-[1.05] group-hover:rotate-3 transition-transform duration-500 group-hover:bg-text group-hover:text-bg shadow-sm">
+                                <i :data-lucide="item.icon" class="w-[22px] h-[22px] stroke-[1.2]"></i>
+                            </div>
+                            <span class="text-[14px] tracking-[0.5em] font-light text-text/80 group-hover:text-text transition-colors">{{ item.name }}</span>
+                        </div>
+                        <div class="relative z-10 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-3 group-hover:translate-x-0 pr-2">
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-text/50 stroke-[1.5]"></i>
+                        </div>
+                        <div v-if="item.view === 'chat' && unreadCount > 0" class="absolute top-1/2 -translate-y-1/2 right-4 w-1.5 h-1.5 bg-text rounded-full animate-ping opacity-80"></div>
+                        <div v-if="item.view === 'chat' && unreadCount > 0" class="absolute top-1/2 -translate-y-1/2 right-4 w-1.5 h-1.5 bg-text rounded-full shadow-[0_0_6px_currentColor]"></div>
                     </div>
                 </div>
             </div>
         </transition>
+
         
-        <!-- 飞鸽传书 (聊天) -->
+    
         <transition name="fade">
-            <div v-show="currentView === 'chat'" class="absolute inset-0 flex flex-col z-20 bg-bg safe-top">
-                <div v-if="settings.chatBgImg" class="absolute inset-0 bg-cover bg-center z-0 opacity-[0.9]" :style="{backgroundImage: `url(${settings.chatBgImg})`}"></div>
-                
-                <header class="h-14 flex items-center justify-between px-4 shrink-0 bg-transparent relative z-10">
-                    <div class="flex items-center gap-4">
-                        <button @click="switchView('home')" class="text-text hover:opacity-50 p-2 -ml-2"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.5]"></i></button>
-                        <div class="flex flex-col cursor-pointer" @click="chatState.isGroupMode ? openGroupManager() : editProfile('them')">
-                            <span class="text-[15px] font-medium tracking-[0.2em]">{{ chatState.isGroupMode ? '众生' : profiles.them.name }}</span>
-                            <span v-if="isTyping" class="text-[10px] text-gray tracking-[0.2em] absolute top-10 typing-dots font-sans">落笔中<span>.</span><span>.</span><span>.</span></span>
+            <div v-show="currentView === 'chat'" class="absolute inset-0 flex flex-col z-20 safe-top" :class="settings.chatBgImg ? 'bg-transparent' : 'bg-bg'">
+
+                <div v-if="settings.chatBgImg" class="absolute inset-0 bg-cover bg-center z-0" :style="{backgroundImage: `url(${settings.chatBgImg})`}"></div>
+                <div v-if="chatState.showSearch" class="absolute top-14 left-0 w-full bg-bg/90 backdrop-blur px-5 py-4 z-[25] flex gap-4 shadow-sm border-b border-border/20">
+                    <input v-model="chatState.keyword" @keyup.enter="executeSearch" placeholder="寻觅旧迹..." class="flex-1 bg-transparent border-b border-border/50 py-1 text-[13px] tracking-widest focus:border-text outline-none">
+                    <button v-if="chatState.results.length" @click="jumpSearch(-1)" class="text-gray hover:text-text p-2"><i data-lucide="chevron-up" class="w-4 h-4 stroke-[1.5]"></i></button>
+                    <button v-if="chatState.results.length" @click="jumpSearch(1)" class="text-gray hover:text-text p-2"><i data-lucide="chevron-down" class="w-4 h-4 stroke-[1.5]"></i></button>
+                    <span v-if="chatState.results.length" class="text-[10px] text-gray self-center tracking-widest font-sans">{{ chatState.currentIdx+1 }}/{{ chatState.results.length }}</span>
+                </div>
+
+                <header class="h-14 flex items-center justify-between px-5 shrink-0 transition-colors relative z-10" :class="settings.chatBgImg ? '' : 'bg-bg'">
+                    <div class="flex items-center gap-4 relative overflow-visible">
+                        <button @click="switchView('home')" class="text-text hover:opacity-50 p-2 -ml-2 drop-shadow-sm"><i data-lucide="arrow-left" class="w-5 h-5 stroke-[1.2]"></i></button>
+                        <div class="flex flex-col cursor-pointer" @click="chatState.isGroupMode ? showGroupDrawer=true : editProfile('them')">
+                            <span class="text-[14px] font-medium tracking-[0.3em] drop-shadow-sm text-text" :style="settings.chatBgImg ? 'text-shadow: 0 1px 4px rgba(0,0,0,0.3); color: #fff;' : ''">{{ chatState.isGroupMode ? '众生印' : profiles.them.name }}</span>
+                                                        <div v-if="isTyping" class="absolute top-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 opacity-90 bg-bg/70 backdrop-blur-xl px-4 py-2.5 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-border/40 z-20">
+                                                            <span class="w-1.5 h-1.5 bg-text/80 rounded-full animate-bounce" style="animation-duration: 1s; animation-delay: 0s;"></span>
+                                                            <span class="w-1.5 h-1.5 bg-text/80 rounded-full animate-bounce" style="animation-duration: 1s; animation-delay: 0.2s;"></span>
+                                                            <span class="w-1.5 h-1.5 bg-text/80 rounded-full animate-bounce" style="animation-duration: 1s; animation-delay: 0.4s;"></span>
+                                                        </div>
+                            
+                                <span class="text-[10px] tracking-[0.4em] font-serif text-text font-light ml-1 flex">
+                                    <span class="animate-[pulse_2s_ease-in-out_infinite_0s]">灵</span>
+                                    <span class="animate-[pulse_2s_ease-in-out_infinite_0.4s]">息</span>
+                                    <span class="animate-[pulse_2s_ease-in-out_infinite_0.8s]">流</span>
+                                    <span class="animate-[pulse_2s_ease-in-out_infinite_1.2s]">转</span>
+                                </span>
+                            </div>
+                            
+
+
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button @click="openGroupManager" class="p-2 hover:opacity-50 transition-opacity" :class="chatState.isGroupMode ? 'text-text' : 'text-gray'"><i data-lucide="users" class="w-5 h-5 stroke-[1.5]"></i></button>
-                        <button @click="toggleSearch" class="p-2 text-text hover:opacity-50 transition-opacity"><i data-lucide="search" class="w-5 h-5 stroke-[1.5]"></i></button>
+                        <button @click="chatState.showSearch = !chatState.showSearch" class="p-2 text-text hover:opacity-50 transition-opacity" :style="settings.chatBgImg?'filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5)); color:#fff;':''"><i data-lucide="search" class="w-4 h-4 stroke-[1.2]"></i></button>
+                        <button @click="deleteMsg('all')" class="p-2 text-text hover:opacity-50 transition-opacity" :style="settings.chatBgImg?'filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5)); color:#fff;':''"><i data-lucide="eraser" class="w-4 h-4 stroke-[1.2]"></i></button>
+                        <button @click="showGroupDrawer=true" class="p-2 transition-opacity text-text" :class="{'opacity-50': !chatState.isGroupMode}" :style="settings.chatBgImg?'filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5)); color:#fff;':''"><i data-lucide="layers" class="w-4 h-4 stroke-[1.2]"></i></button>
                     </div>
                 </header>
 
-                <div v-if="chatState.isSearching" class="glass-mask px-5 py-3 flex items-center gap-4 text-xs shrink-0 z-10 border-b border-border">
-                    <input v-model="chatState.keyword" type="text" placeholder="寻觅..." class="flex-1 bg-transparent border-b border-border focus:border-text py-1 transition-colors tracking-widest text-[13px]" @input="executeSearch">
-                    <span v-if="chatState.results.length > 0" class="text-gray text-[11px] font-sans">{{ chatState.currentIdx + 1 }}/{{ chatState.results.length }}</span>
-                    <button @click="jumpSearch(-1)" class="text-text disabled:opacity-30 p-1"><i data-lucide="chevron-up" class="w-5 h-5 stroke-[1.5]"></i></button>
-                    <button @click="jumpSearch(1)" class="text-text disabled:opacity-30 p-1"><i data-lucide="chevron-down" class="w-5 h-5 stroke-[1.5]"></i></button>
-                </div>
-
-                <main id="chat-container" class="flex-1 overflow-y-auto px-4 py-6 scroll-smooth relative z-10" @click="chatState.isSearching = false">
-                    <div class="pb-8">
+                <main id="chat-container" class="flex-1 overflow-y-auto px-4 py-8 scroll-smooth relative z-10">
+                    <div class="pb-10 min-h-full">
                         <transition-group name="msg-list">
-                            <div v-for="msg in messages" :key="msg.id" :id="'msg-'+msg.id" class="mb-6 relative group flex gap-3" :class="msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'">
-                                
-                                <div v-if="settings.showAvatar" class="shrink-0 w-10 h-10 cursor-pointer mt-0.5" @click="editProfile(msg.sender)">
+                            <div v-for="(msg, index) in messages" :key="msg.id" :id="'msg-'+msg.id" class="mb-3 relative group flex gap-3" :class="[msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row', chatState.results[chatState.currentIdx] === msg.id ? 'highlight bg-border/20 rounded p-1 -mx-1' : '']">
+
+                                <div v-if="settings.showAvatar" class="shrink-0 w-8 h-8 cursor-pointer shadow-sm relative z-10" @click="editProfile(msg.sender)" :style="{ borderRadius: settings.avatarRadius + '%' }">
                                     <div class="w-full h-full bg-border/50 flex items-center justify-center overflow-hidden" :style="{ borderRadius: settings.avatarRadius + '%' }">
                                         <img v-if="getSenderProfile(msg.sender).avatar" :src="getSenderProfile(msg.sender).avatar" class="w-full h-full object-cover">
-                                        <span v-else class="text-[13px] text-gray font-medium">{{ getSenderProfile(msg.sender).name.charAt(0) }}</span>
+                                        <span v-else class="text-[12px] text-gray font-medium">{{ getSenderProfile(msg.sender).name.charAt(0) }}</span>
                                     </div>
                                 </div>
 
-                                <div class="flex flex-col relative max-w-[calc(100%-60px)]" :class="msg.sender === 'me' ? 'items-end' : 'items-start'">
-                                    <span v-if="settings.showName || chatState.isGroupMode" class="text-[10px] text-gray mb-1 tracking-[0.1em] px-1">{{ getSenderProfile(msg.sender).name }}</span>
-                                    
-                                    <button @click="deleteMsg(msg.id)" class="absolute top-2 opacity-0 group-hover:opacity-100 transition-opacity text-gray hover:text-text p-1 z-10" :class="msg.sender === 'me' ? '-left-8' : '-right-8'">
+                                <div class="flex flex-col relative max-w-[calc(100%-45px)]" :class="msg.sender === 'me' ? 'items-end' : 'items-start'">
+                                    <span v-if="settings.showName || chatState.isGroupMode" class="text-[10px] text-gray mb-1 tracking-[0.1em] px-1 font-sans opacity-80" :style="settings.chatBgImg?'text-shadow: 0 1px 2px rgba(0,0,0,0.5); color: #fff;':''">{{ getSenderProfile(msg.sender).name }}</span>
+
+                                    <button @click="deleteMsg(msg.id)" class="absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity text-gray hover:text-text p-1 z-10" :class="msg.sender === 'me' ? '-left-8' : '-right-8'" :style="settings.chatBgImg?'color:#fff':''">
                                         <i data-lucide="x" class="w-3 h-3 stroke-[2]"></i>
                                     </button>
 
-                                    <div class="message" 
-                                         :class="[msg.sender === 'me' ? 'message-sent' : 'message-received']" 
-                                         :style="{ fontSize: settings.fontSize + 'px' }" 
-                                         v-html="highlightText(msg.content)">
+                                    <div class="message shadow-sm"
+                                         :class="[msg.sender === 'me' ? 'message-sent' : 'message-received']"
+                                         :style="{ fontSize: settings.fontSize + 'px' }"
+                                         v-html="msg.content">
                                     </div>
                                 </div>
                             </div>
@@ -352,75 +503,75 @@
                     </div>
                 </main>
 
-                <footer class="shrink-0 bg-bg pb-8 relative z-20 pt-3 border-t border-border/50">
-                    <div class="flex items-end px-4 gap-3 mx-2 pb-2">
-                        <button @click="forceReply" :disabled="isTyping" class="p-2 text-gray hover:text-text shrink-0 disabled:opacity-30 transition-colors" title="风铃">
-                            <i data-lucide="wind" class="w-5 h-5 stroke-[1.5]"></i>
+                <footer class="shrink-0 relative z-20 pt-4 pb-8 px-4" :class="settings.chatBgImg ? '' : 'bg-bg'">
+                    <div class="flex items-end gap-3 pb-2 max-w-lg mx-auto relative">
+                        <button @click="forceReply" :disabled="isTyping" class="p-2 text-gray hover:text-text shrink-0 disabled:opacity-30 transition-colors cursor-pointer" title="风祈" :style="settings.chatBgImg?'filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5)); color:#fff;':''">
+                            <i data-lucide="wind" class="w-5 h-5 stroke-[1.2]"></i>
                         </button>
-                        <textarea v-model="inputText" @keydown.enter.prevent="handleSend" @input="saveDraft" rows="1" 
-                                  class="flex-1 py-2 text-[14px] resize-none max-h-32 tracking-wider placeholder:text-gray/50 border-b border-border focus:border-text transition-colors bg-transparent"
-                                  placeholder="落笔..."></textarea>
-                        <button @click="handleSend" class="p-2 text-text hover:opacity-50 transition-opacity shrink-0">
-                            <i data-lucide="send" class="w-5 h-5 stroke-[1.5]"></i>
+                        <textarea v-model="inputText" @keydown.enter.prevent="handleSend" @input="saveDraft" rows="1"
+                                  class="flex-1 ink-input text-[14px] tracking-wider font-sans bg-bg/80 backdrop-blur-sm"
+                                  placeholder="点染遗墨..."></textarea>
+                        <button @click="handleSend" class="p-2 text-text hover:opacity-50 transition-opacity shrink-0" :style="settings.chatBgImg?'filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5)); color:#fff;':''">
+                            <i data-lucide="feather" class="w-5 h-5 stroke-[1.5]"></i>
                         </button>
                     </div>
                 </footer>
             </div>
         </transition>
 
-        <!-- 藏经卷宗 -->
         <transition name="fade">
             <div v-show="currentView === 'library'" class="absolute inset-0 flex flex-col z-20 bg-bg safe-top">
-                <header class="h-14 flex items-center justify-between px-5 border-b border-border shrink-0">
+                <header class="h-14 flex items-center justify-between px-6 shrink-0 bg-bg z-10 relative">
                     <div class="flex items-center gap-4">
-                        <button @click="switchView('home')" class="text-text hover:opacity-50 p-1 -ml-1"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.5]"></i></button>
-                        <span class="text-[14px] tracking-[0.4em] font-medium">藏经卷宗</span>
+                        <button @click="switchView('home')" class="text-text hover:opacity-50 p-1 -ml-1"><i data-lucide="arrow-left" class="w-5 h-5 stroke-[1.2]"></i></button>
+                        <span class="text-[13px] tracking-[0.4em] font-medium text-gray">琅嬛妙篇</span>
                     </div>
                     <div class="flex items-center gap-5">
-                        <button @click="deduplicateReplies" class="text-gray hover:text-text transition-colors"><i data-lucide="sparkles" class="w-5 h-5 stroke-[1.5]"></i></button>
-                        <button @click="batchSelectMode = !batchSelectMode" class="text-[12px] tracking-[0.2em] transition-colors" :class="batchSelectMode?'text-text font-bold':'text-gray hover:text-text'">{{ batchSelectMode ? '毕' : '择' }}</button>
+                        <input v-model="libSearch" placeholder="寻真..." class="w-16 text-[12px] tracking-widest bg-transparent border-b border-border/50 focus:border-text py-1 text-right transition-colors outline-none font-sans">
+                        <button @click="deduplicateReplies" class="text-text hover:opacity-50"><i data-lucide="scissors" class="w-4 h-4 stroke-[1.2]"></i></button>
+                        <button @click="batchSelectMode = !batchSelectMode" class="text-text hover:opacity-50 transition-colors" :class="{'opacity-40': batchSelectMode}"><i data-lucide="check-square" class="w-4 h-4 stroke-[1.2]"></i></button>
                     </div>
                 </header>
 
-                <div class="flex flex-1 overflow-hidden">
-                    <div class="w-20 border-r border-border flex flex-col relative shrink-0 bg-bg/50">
-                        <div class="flex-1 overflow-y-auto pb-4 pt-4 space-y-2">
-                            <div v-for="g in replyGroups" :key="g.id" class="py-4 px-1 text-[12px] tracking-[0.3em] text-center cursor-pointer transition-all relative flex flex-col items-center group" @click="currentGroupId = g.id">
-                                <span :class="currentGroupId === g.id ? 'text-text font-bold' : 'text-gray hover:text-text'" style="writing-mode: vertical-rl; text-orientation: upright;">{{ g.name }}</span>
-                                <button v-if="currentGroupId === g.id && replyGroups.length>1" @click.stop="deleteGroup(g.id)" class="absolute bottom-0 text-gray opacity-0 group-hover:opacity-100 hover:text-text"><i data-lucide="x" class="w-3 h-3 stroke-[2]"></i></button>
+                <div class="flex flex-1 overflow-hidden mt-4">
+                    <div class="w-20 flex flex-col relative shrink-0 border-r border-border/20">
+                        <div class="flex-1 overflow-y-auto hide-scrollbar pb-10 space-y-2">
+                            <div v-for="g in replyGroups" :key="g.id" class="py-6 px-1 text-[13px] tracking-[0.4em] text-center cursor-pointer transition-all relative flex flex-col items-center group font-light" @click="currentGroupId = g.id">
+                                <span :class="currentGroupId === g.id ? 'text-text font-medium' : 'text-gray hover:text-text'" style="writing-mode: vertical-rl; text-orientation: upright;">{{ g.name }}</span>
+                                <div v-if="currentGroupId === g.id" class="absolute right-0 top-1/2 -translate-y-1/2 w-[2px] h-10 bg-text rounded-l-full"></div>
+                                <button v-if="currentGroupId === g.id && replyGroups.length>1" @click.stop="deleteGroup(g.id)" class="absolute bottom-1 text-gray/30 hover:text-text"><i data-lucide="x" class="w-3 h-3 stroke-[1.2]"></i></button>
                             </div>
-                            <button @click="addGroup" class="w-full py-6 text-gray hover:text-text transition-colors flex justify-center"><i data-lucide="plus" class="w-5 h-5 stroke-[1.5]"></i></button>
+                            <button @click="addGroup" class="w-full py-8 text-gray hover:text-text transition-colors flex justify-center"><i data-lucide="plus" class="w-4 h-4 stroke-[1.2]"></i></button>
                         </div>
                     </div>
 
                     <div class="flex-1 flex flex-col overflow-hidden relative bg-bg">
-                        <div v-if="currentGroup" class="shrink-0 p-5 border-b border-border flex justify-between items-end gap-4">
-                            <input v-model="currentGroup.name" @blur="debouncedSave" class="text-[15px] font-medium tracking-[0.3em] bg-transparent border-none flex-1 text-text placeholder:text-gray/50" placeholder="卷名">
-                            <input v-model="libSearch" placeholder="寻..." class="w-16 text-[12px] tracking-widest bg-transparent border-b border-border focus:border-text py-1 text-right transition-colors">
+                        <div v-if="currentGroup" class="shrink-0 px-6 py-4 flex justify-between items-end gap-4 relative z-10">
+                            <input v-model="currentGroup.name" @blur="debouncedSave" class="text-[16px] font-light tracking-[0.3em] bg-transparent border-none flex-1 text-text placeholder:text-gray/30 outline-none" placeholder="卷名...">
                         </div>
 
-                        <div class="flex-1 overflow-y-auto p-5 pb-24 reply-sortable-list space-y-5">
-                            <div v-if="currentGroup && filteredReplies.length === 0" class="text-[12px] text-gray text-center mt-20 tracking-[0.6em]">空</div>
-                            
-                            <div v-for="reply in filteredReplies" :key="reply.id" :data-id="reply.id" class="flex items-start gap-3 group transition-opacity" :class="{'opacity-40': !reply.enabled}">
-                                <div v-if="batchSelectMode" class="mt-1 shrink-0"><input type="checkbox" :value="reply.id" v-model="selectedLibIds" class="mag-checkbox"></div>
-                                <i v-else data-lucide="grip-vertical" class="w-5 h-5 text-border mt-1 cursor-grab active:cursor-grabbing drag-handle hover:text-gray transition-colors shrink-0 stroke-[1.5]"></i>
-                                
-                                <textarea v-model="reply.text" @blur="debouncedSave" rows="1" class="flex-1 text-[13px] tracking-wider bg-transparent border-b border-transparent group-hover:border-border focus:border-text resize-none min-h-[30px] transition-colors py-1" :class="{'line-through': !reply.enabled}"></textarea>
-                                
-                                <button @click="reply.enabled = !reply.enabled; debouncedSave()" class="text-[10px] text-gray hover:text-text border border-border px-2 py-1 shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">{{ reply.enabled ? '启' : '禁' }}</button>
+                        <div class="flex-1 overflow-y-auto px-6 pb-28 reply-sortable-list space-y-5 hide-scrollbar">
+                            <div v-if="currentGroup && filteredReplies.length === 0" class="text-[12px] text-gray text-center mt-24 tracking-[0.6em] font-light">虚空无寄</div>
+
+                            <div v-for="reply in filteredReplies" :key="reply.id" :data-id="reply.id" class="flex items-start gap-4 group transition-opacity" :class="{'opacity-50': !reply.enabled}">
+                                <div v-if="batchSelectMode" class="mt-1.5 shrink-0"><input type="checkbox" :value="reply.id" v-model="selectedLibIds" class="mag-checkbox"></div>
+                                <i v-else data-lucide="grip-vertical" class="w-4 h-4 text-border mt-1.5 cursor-grab active:cursor-grabbing drag-handle hover:text-gray transition-colors shrink-0 stroke-[1.5]"></i>
+
+                                <textarea v-model="reply.text" @blur="debouncedSave" rows="1" class="flex-1 text-[13px] tracking-wider bg-transparent border-b border-transparent group-hover:border-border/30 focus:border-text/50 resize-none min-h-[30px] transition-colors py-1 outline-none text-text" :class="{'line-through text-gray': !reply.enabled}"></textarea>
+
+                                <button @click="reply.enabled = !reply.enabled; debouncedSave()" class="text-[10px] text-gray hover:text-text px-2 py-1 shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity bg-bg shadow-sm rounded-sm">{{ reply.enabled ? '结印' : '启封' }}</button>
                             </div>
                         </div>
 
-                        <div class="absolute bottom-0 w-full p-4 border-t border-border glass-mask flex gap-3">
+                        <div class="absolute bottom-6 left-6 right-6 flex gap-4">
                             <template v-if="batchSelectMode">
-                                <button @click="batchAction('delete')" class="flex-1 py-3 border border-border text-[12px] tracking-[0.3em] text-gray hover:bg-text hover:text-bg transition-all">焚毁</button>
-                                <button @click="batchAction('toggle')" class="flex-1 py-3 border border-border text-[12px] tracking-[0.3em] text-text hover:bg-border transition-all">启/禁</button>
-                                <button @click="batchAction('move')" class="flex-1 py-3 border border-text text-[12px] tracking-[0.3em] bg-text text-bg hover:opacity-80 transition-all">迁移</button>
+                                <button @click="batchAction('delete')" class="flex-1 py-3 text-[12px] tracking-[0.4em] text-gray bg-bg shadow-md hover:text-red-500 transition-all rounded-lg border border-border/30">业火</button>
+                                <button @click="batchAction('toggle')" class="flex-1 py-3 text-[12px] tracking-[0.4em] text-text bg-bg shadow-md hover:bg-border/20 transition-all rounded-lg border border-border/30">流转</button>
+                                <button @click="batchAction('move')" class="flex-1 py-3 bg-text text-bg text-[12px] tracking-[0.4em] hover:opacity-90 shadow-lg transition-all rounded-lg">引渡</button>
                             </template>
                             <template v-else>
-                                <button @click="addReplyToCurrent" class="flex-1 py-3 border border-border text-[13px] tracking-[0.4em] text-text hover:bg-border transition-colors">添笔</button>
-                                <button @click="batchAddReplies" class="flex-1 py-3 border border-text bg-text text-bg text-[13px] tracking-[0.4em] hover:opacity-80 transition-colors">泼墨</button>
+                                <button @click="addReplyToCurrent" class="flex-1 py-3 bg-bg text-[12px] tracking-[0.5em] text-text hover:bg-border/20 shadow-md border border-border/30 transition-colors rounded-lg">执笔</button>
+                                <button @click="batchAddReplies" class="flex-1 py-3 bg-text text-bg text-[12px] tracking-[0.5em] hover:opacity-90 shadow-lg transition-colors rounded-lg">飞霜</button>
                             </template>
                         </div>
                     </div>
@@ -428,312 +579,193 @@
             </div>
         </transition>
 
-        <!-- 流年印记 -->
         <transition name="fade">
-            <div v-show="currentView === 'timeline'" class="absolute inset-0 flex flex-col z-20 bg-bg safe-top">
-                <header class="h-14 flex items-center justify-between px-5 border-b border-border shrink-0">
-                    <button @click="switchView('home')" class="text-text hover:opacity-50 p-1 -ml-1"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.5]"></i></button>
-                    <div class="flex gap-8">
-                        <button @click="timelineTab = 'anni'" class="text-[14px] tracking-[0.4em] transition-colors pb-1" :class="timelineTab==='anni'?'text-text border-b-2 border-text font-bold':'text-gray'">岁时</button>
-                        <button @click="timelineTab = 'period'" class="text-[14px] tracking-[0.4em] transition-colors pb-1" :class="timelineTab==='period'?'text-text border-b-2 border-text font-bold':'text-gray'">天葵</button>
-                    </div>
-                    <button @click="timelineTab==='anni'?addAnniversary():addPeriodHistory()" class="text-text hover:opacity-50 p-1"><i data-lucide="plus" class="w-6 h-6 stroke-[1.5]"></i></button>
+            <div v-show="currentView === 'insight'" class="absolute inset-0 flex flex-col z-20 bg-bg safe-top">
+                <header class="h-14 flex items-center justify-between px-6 shrink-0 bg-bg z-10">
+                    <button @click="switchView('home')" class="text-text hover:opacity-50 p-1 -ml-1"><i data-lucide="arrow-left" class="w-5 h-5 stroke-[1.2]"></i></button>
+                    <span class="text-[13px] tracking-[0.5em] font-medium text-gray ml-2">明镜寒尘</span>
+                    <div class="w-8"></div>
                 </header>
-                
-                <main class="flex-1 overflow-y-auto p-6 space-y-8 pb-24">
-                    <!-- 岁时 -->
-                    <div v-if="timelineTab === 'anni'" class="space-y-6 max-w-sm mx-auto">
-                        <div v-for="anni in sortedAnniversaries" :key="anni.id" class="border border-border p-6 relative group flex flex-col bg-bg/50">
-                            <button @click="removeAnniversary(anni.id)" class="absolute top-4 right-4 text-gray hover:text-text opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="x" class="w-4 h-4 stroke-[1.5]"></i></button>
-                            <input v-model="anni.name" @blur="debouncedSave" placeholder="名目..." class="bg-transparent text-[16px] mb-6 tracking-[0.2em] w-[80%] text-text font-medium border-b border-transparent focus:border-border transition-colors">
-                            <div class="flex items-end justify-between relative">
-                                <div class="relative">
-                                    <span class="text-[12px] text-gray tracking-[0.1em] font-sans border-b border-border pb-1 block w-28">{{ anni.date.replace(/-/g, '.') }}</span>
-                                    <input type="date" v-model="anni.date" @change="debouncedSave">
-                                </div>
-                                <div class="text-right">
-                                    <span class="text-[10px] text-gray tracking-[0.2em] mr-2 align-text-bottom">{{ getAnniDays(anni.date) >= 0 ? '余' : '已过' }}</span>
-                                    <span class="text-4xl font-light text-text font-sans">{{ Math.abs(getAnniDays(anni.date)) }}</span>
-                                    <span class="text-[10px] text-gray tracking-widest ml-1 align-text-bottom">日</span>
-                                </div>
-                            </div>
+                <main class="flex-1 overflow-y-auto px-6 py-8 flex flex-col gap-10 hide-scrollbar pb-24">
+
+                    <div class="flex flex-col items-center justify-center my-6">
+                        <span class="text-[11px] tracking-[1em] text-gray mb-8 ml-3">相伴已过</span>
+                        <div class="flex items-baseline">
+                            <span class="text-7xl font-light text-text font-sans tracking-widest">{{ statData.daysKnownRefined }}</span>
+                            <span class="text-[12px] text-gray ml-2 tracking-widest">昼</span>
                         </div>
-                        <div v-if="anniversaries.length === 0" class="text-[12px] text-gray text-center mt-32 tracking-[0.8em]">无痕</div>
                     </div>
 
-                    <!-- 天葵 -->
-                    <div v-if="timelineTab === 'period'" class="max-w-sm mx-auto flex flex-col h-full">
-                        <div class="flex justify-around items-center py-6 border-b border-border shrink-0 bg-bg/50 rounded-sm">
-                            <div class="text-center">
-                                <div class="text-3xl font-light text-text font-sans mb-1">{{ periodDaysSince }}</div>
-                                <div class="text-[10px] text-gray tracking-[0.2em]">上期至今(日)</div>
-                            </div>
-                            <div class="w-px h-12 bg-border"></div>
-                            <div class="text-center">
-                                <div class="text-3xl font-light text-text font-sans mb-1">{{ periodAvgDays }}</div>
-                                <div class="text-[10px] text-gray tracking-[0.2em]">平均间隔(日)</div>
-                            </div>
+                    <div class="grid grid-cols-2 gap-y-12 gap-x-6 px-4">
+                        <div class="flex flex-col items-center">
+                            <span class="text-[10px] tracking-[0.4em] text-gray mb-4">万卷总汇</span>
+                            <span class="text-3xl font-light text-text font-sans">{{ messages.length }}</span>
                         </div>
-                        
-                        <div class="flex justify-end mt-4 mb-2">
-                            <button @click="addPeriodHistory" class="text-[11px] text-gray border border-border px-3 py-1 hover:text-text transition-colors">追溯过往</button>
+                        <div class="flex flex-col items-center">
+                            <span class="text-[10px] tracking-[0.4em] text-gray mb-4">墨痕落海</span>
+                            <span class="text-3xl font-light text-text font-sans">{{ statData.totalChars }}</span>
                         </div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-[10px] tracking-[0.4em] text-gray mb-4">孤夜长明</span>
+                            <span class="text-2xl font-light text-text font-sans tracking-widest">{{ statData.latestNightHour || '--:--' }}</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-[10px] tracking-[0.4em] text-gray mb-4">枯寂断弦</span>
+                            <div class="flex items-baseline mt-1"><span class="text-2xl font-light text-text font-sans tracking-widest">{{ statData.longestGap }}</span><span class="text-[10px] text-gray ml-1">日</span></div>
+                        </div>
+                    </div>
 
-                        <div class="flex-1 overflow-y-auto pt-2 relative">
-                            <div class="absolute left-[20px] top-4 bottom-0 w-px bg-border"></div>
-                            <div v-for="(p, i) in sortedPeriods" :key="p.id" class="flex items-center mb-6 relative group pl-[44px]">
-                                <div class="absolute left-[16.5px] w-2 h-2 bg-text rounded-full mt-0.5 border-2 border-bg box-content"></div>
-                                <div class="flex-1 flex justify-between items-center bg-bg/80 border border-border p-4 hover:border-gray transition-colors">
-                                    <div class="relative w-28">
-                                        <span class="text-[14px] tracking-[0.1em] font-sans text-text font-medium">{{ p.date.replace(/-/g, '.') }}</span>
-                                        <input type="date" v-model="p.date" @change="debouncedSave">
-                                        <span class="text-[9px] text-gray absolute -top-4 left-0 opacity-50">点拨修改</span>
+                    <div class="flex flex-col mt-10 px-4">
+                        <span class="text-[11px] tracking-[0.5em] text-gray text-center mb-8">字灵汇聚</span>
+                        <div class="flex justify-between relative">
+                            <div class="w-1/2 pr-6">
+                                <span class="text-[10px] text-gray tracking-[0.4em] block mb-5 opacity-60 text-right">吾言</span>
+                                <div class="space-y-5">
+                                    <div v-for="(word, idx) in statData.topWordsMe" :key="idx" class="flex justify-between items-center text-[12px] tracking-widest">
+                                        <span class="text-gray text-[10px] font-sans opacity-60">{{ word.c }}</span>
+                                        <span class="text-text max-w-[70px] truncate font-light" :title="word.w">{{ word.w }}</span>
                                     </div>
-                                    <div class="flex items-center gap-4">
-                                        <span v-if="i < sortedPeriods.length - 1" class="text-[11px] text-gray tracking-[0.1em]">隔 {{ getPeriodGap(sortedPeriods[i].date, sortedPeriods[i+1].date) }}</span>
-                                        <button @click="removePeriod(p.id)" class="text-gray hover:text-text opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="x" class="w-4 h-4 stroke-[1.5]"></i></button>
-                                    </div>
+                                    <div v-if="!statData.topWordsMe.length" class="text-[10px] text-gray/30 tracking-widest text-right">未有回响</div>
                                 </div>
                             </div>
-                            <div v-if="periods.length === 0" class="text-[12px] text-gray text-center mt-20 tracking-[0.8em] ml-8">无痕</div>
+                            <div class="absolute left-1/2 top-0 bottom-0 w-[1px] bg-border/30 -translate-x-1/2"></div>
+                            <div class="w-1/2 pl-6">
+                                <span class="text-[10px] text-gray tracking-[0.4em] block mb-5 opacity-60">客语</span>
+                                <div class="space-y-5">
+                                    <div v-for="(word, idx) in statData.topWordsThem" :key="idx" class="flex justify-between items-center text-[12px] tracking-widest">
+                                        <span class="text-text max-w-[70px] truncate font-light" :title="word.w">{{ word.w }}</span>
+                                        <span class="text-gray text-[10px] font-sans opacity-60">{{ word.c }}</span>
+                                    </div>
+                                    <div v-if="!statData.topWordsThem.length" class="text-[10px] text-gray/30 tracking-widest">未有回响</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </main>
             </div>
         </transition>
 
-        <!-- 岁时风物 -->
         <transition name="fade">
             <div v-show="currentView === 'aesthetic'" class="absolute inset-0 flex flex-col z-20 bg-bg safe-top">
-                <header class="h-14 flex items-center justify-between px-5 border-b border-border shrink-0">
-                    <button @click="switchView('home')" class="text-text hover:opacity-50 p-1 -ml-1"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.5]"></i></button>
-                    <span class="text-[14px] tracking-[0.4em] font-medium">岁时风物</span>
+                <header class="h-14 flex items-center justify-between px-6 shrink-0 bg-bg z-10">
+                    <button @click="switchView('home')" class="text-text hover:opacity-50 p-1 -ml-1"><i data-lucide="arrow-left" class="w-5 h-5 stroke-[1.2]"></i></button>
+                    <span class="text-[13px] tracking-[0.5em] font-medium text-gray ml-2">森罗之象</span>
                     <div class="w-8"></div>
                 </header>
-                <main class="flex-1 overflow-y-auto p-8 space-y-12 pb-24">
-                    
+                <main class="flex-1 overflow-y-auto px-8 py-10 space-y-16 pb-28 hide-scrollbar">
+
                     <section>
-                        <h3 class="text-[12px] text-gray tracking-[0.5em] border-b border-border pb-3 mb-5 font-bold">画壁</h3>
-                        <div class="grid grid-cols-3 gap-4 mb-5">
-                            <div @click="settings.chatBgImg = ''" class="aspect-[9/16] border cursor-pointer flex items-center justify-center transition-all duration-300" :class="!settings.chatBgImg ? 'border-text bg-border/20' : 'border-border text-gray'">
-                                <span class="text-[12px] tracking-[0.4em]" :class="!settings.chatBgImg?'text-text font-bold':'text-gray'">无尘</span>
+                        <h3 class="text-[11px] text-gray tracking-[0.8em] mb-8 font-medium text-center opacity-70">璧影</h3>
+                        <div class="grid grid-cols-3 gap-5 mb-8">
+                            <div @click="settings.chatBgImg = ''" class="aspect-[9/16] rounded-lg cursor-pointer flex items-center justify-center transition-all duration-300 relative group overflow-hidden border border-border" :class="!settings.chatBgImg ? 'ring-1 ring-text ring-offset-2 ring-offset-bg opacity-100' : 'opacity-40 hover:opacity-80'">
+                                <span class="text-[11px] tracking-[0.4em]" :class="!settings.chatBgImg?'text-text font-medium':'text-gray'">无痕</span>
                             </div>
-                            <div v-for="(bg, idx) in settings.customBgs" :key="idx" @click="settings.chatBgImg = bg" 
-                                 class="aspect-[9/16] border cursor-pointer relative overflow-hidden group transition-all duration-300"
-                                 :class="settings.chatBgImg === bg ? 'border-text p-[2px]' : 'border-border'">
+                            <div v-for="(bg, idx) in settings.customBgs" :key="idx" @click="settings.chatBgImg = bg"
+                                 class="aspect-[9/16] rounded-lg cursor-pointer relative overflow-hidden transition-all duration-300 border border-border"
+                                 :class="settings.chatBgImg === bg ? 'ring-1 ring-text ring-offset-2 ring-offset-bg opacity-100' : 'opacity-60 hover:opacity-90'">
                                 <img :src="bg" class="w-full h-full object-cover">
-                                <button @click.stop="removeCustomBg(idx)" class="absolute top-1 right-1 bg-black/50 text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity rounded"><i data-lucide="x" class="w-3 h-3 stroke-[2]"></i></button>
+                                <button @click.stop="removeCustomBg(idx)" class="absolute top-1.5 right-1.5 bg-black/40 text-white p-1 transition-opacity rounded-md backdrop-blur-sm"><i data-lucide="x" class="w-3 h-3 stroke-[2]"></i></button>
                             </div>
                         </div>
-                        <label class="block text-center border border-border py-3 text-[12px] tracking-[0.5em] text-gray hover:text-text hover:border-gray cursor-pointer transition-colors">
-                            悬挂新卷
+                        <label class="block text-center border border-border/50 py-3.5 text-[12px] tracking-[0.6em] text-gray hover:text-text hover:border-border transition-colors rounded-lg cursor-pointer">
+                            纳山川
                             <input type="file" accept="image/*" @change="e => handleImgUpload(e, 'bg')" class="hidden">
                         </label>
                     </section>
 
                     <section>
-                        <h3 class="text-[12px] text-gray tracking-[0.5em] border-b border-border pb-3 mb-5 font-bold">字形</h3>
-                        <div class="space-y-5 text-[13px]">
-                            <div class="flex items-end justify-between border-b border-border pb-2 focus-within:border-text transition-colors">
-                                <span class="tracking-[0.2em] text-gray mb-1">外链网络字体</span>
-                                <input v-model="settings.customFontUrl" placeholder="留空则无" class="w-2/3 bg-transparent text-right focus:outline-none tracking-widest font-sans text-text">
-                            </div>
-                            <div class="flex items-end justify-between border-b border-border pb-2 focus-within:border-text transition-colors">
-                                <span class="tracking-[0.2em] text-gray mb-1">字体呼唤标识</span>
-                                <input v-model="settings.customFontName" placeholder="CustomFont" class="w-2/3 bg-transparent text-right focus:outline-none tracking-widest font-sans text-text">
-                            </div>
-                        </div>
+                        <h3 class="text-[11px] text-gray tracking-[0.8em] mb-8 font-medium text-center opacity-70">文昌</h3>
+                        <textarea v-model="settings.customCss" rows="3" placeholder="@import url('...');
+body { ... }" class="w-full bg-border/5 p-4 text-[12px] border-b border-border/30 focus:border-text transition-colors resize-none font-mono outline-none tracking-wider leading-relaxed text-text placeholder:text-gray/30"></textarea>
                     </section>
 
                     <section>
-                        <h3 class="text-[12px] text-gray tracking-[0.5em] border-b border-border pb-3 mb-5 font-bold">气泡塑形</h3>
-                        <textarea v-model="settings.customBubbleCss" rows="5" placeholder="/* 注入魂理 雕琢气泡 */&#10;.message { border-radius: 10px; }" class="w-full bg-transparent border border-border p-4 text-[11px] focus:border-text transition-colors resize-none mb-2 font-mono outline-none tracking-wider leading-loose"></textarea>
+                        <h3 class="text-[11px] text-gray tracking-[0.8em] mb-8 font-medium text-center opacity-70">结界</h3>
+                        <textarea v-model="settings.customBubbleCss" rows="3" placeholder=".message { ... }" class="w-full bg-border/5 p-4 text-[12px] border-b border-border/30 focus:border-text transition-colors resize-none font-mono outline-none tracking-wider leading-loose text-text placeholder:text-gray/30"></textarea>
                     </section>
                 </main>
             </div>
         </transition>
 
-        <!-- 洞察秋毫 -->
-        <transition name="fade">
-            <div v-show="currentView === 'insight'" class="absolute inset-0 flex flex-col z-20 bg-bg safe-top">
-                <header class="h-14 flex items-center justify-between px-5 border-b border-border shrink-0">
-                    <button @click="switchView('home')" class="text-text hover:opacity-50 p-1 -ml-1"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.5]"></i></button>
-                    <span class="text-[14px] tracking-[0.4em] font-medium">洞察秋毫</span>
-                    <div class="w-8"></div>
-                </header>
-                <main class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 bg-bg pb-12">
-                    
-                    <div class="border border-border bg-bg/50 p-6 flex flex-col justify-center items-center h-40 relative overflow-hidden">
-                        <svg class="absolute -right-8 -bottom-8 w-40 h-40 text-border opacity-50 stroke-[1] fill-none" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/><circle cx="50" cy="50" r="20"/></svg>
-                        <span class="text-[12px] tracking-[0.8em] text-gray mb-4 z-10 ml-2">立卷总计</span>
-                        <span class="text-6xl font-light text-text font-sans z-10">{{ messages.length }}</span>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-5">
-                        <div class="border border-border bg-bg/50 p-5 flex flex-col items-center justify-center h-32">
-                            <span class="text-[11px] tracking-[0.3em] text-gray mb-3">落墨总字</span>
-                            <span class="text-3xl font-light text-text font-sans">{{ statData.totalChars }}</span>
-                        </div>
-                        <div class="border border-border bg-bg/50 p-5 flex flex-col items-center justify-center h-32">
-                            <span class="text-[11px] tracking-[0.3em] text-gray mb-3">日均频次</span>
-                            <span class="text-3xl font-light text-text font-sans">{{ statData.avgPerDay }}</span>
-                        </div>
-                        <div class="border border-border bg-bg/50 p-5 flex flex-col items-center justify-center h-32">
-                            <span class="text-[11px] tracking-[0.3em] text-gray mb-3">深宵长谈</span>
-                            <span class="text-2xl font-light text-text font-sans tracking-widest">{{ statData.latestNightHour || '--:--' }}</span>
-                        </div>
-                        <div class="border border-border bg-bg/50 p-5 flex flex-col items-center justify-center h-32">
-                            <span class="text-[11px] tracking-[0.3em] text-gray mb-3">最长挂机</span>
-                            <span class="text-2xl font-light text-text font-sans tracking-widest">{{ statData.longestGap }}天</span>
-                        </div>
-                    </div>
-
-                    <div class="border border-border bg-bg/50 p-6 flex flex-col mt-2">
-                        <span class="text-[12px] tracking-[0.4em] text-gray border-b border-border pb-4 mb-5 font-bold">高频言辞</span>
-                        <div class="grid grid-cols-2 gap-8">
-                            <div>
-                                <span class="text-[10px] text-gray tracking-[0.3em] block mb-4 border-b border-border/50 pb-1">吾之常言</span>
-                                <div class="space-y-3">
-                                    <div v-for="(word, idx) in statData.topWordsMe" :key="idx" class="flex justify-between items-center text-[12px] tracking-widest">
-                                        <span class="text-text max-w-[80px] truncate" :title="word.w">{{ word.w }}</span>
-                                        <span class="text-gray text-[10px] font-sans">{{ word.c }}</span>
-                                    </div>
-                                    <div v-if="!statData.topWordsMe.length" class="text-[11px] text-gray">无</div>
-                                </div>
-                            </div>
-                            <div>
-                                <span class="text-[10px] text-gray tracking-[0.3em] block mb-4 border-b border-border/50 pb-1">客之常言</span>
-                                <div class="space-y-3">
-                                    <div v-for="(word, idx) in statData.topWordsThem" :key="idx" class="flex justify-between items-center text-[12px] tracking-widest">
-                                        <span class="text-text max-w-[80px] truncate" :title="word.w">{{ word.w }}</span>
-                                        <span class="text-gray text-[10px] font-sans">{{ word.c }}</span>
-                                    </div>
-                                    <div v-if="!statData.topWordsThem.length" class="text-[11px] text-gray">无</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-6 text-center">
-                        <span class="text-[11px] text-gray tracking-[0.4em]">结缘于 {{ statData.firstTime }} (相识 {{ statData.daysKnown }} 日)</span>
-                    </div>
-                </main>
-            </div>
-        </transition>
-
-        <!-- 万象法则 (设置) -->
         <transition name="fade">
             <div v-show="currentView === 'settings'" class="absolute inset-0 flex flex-col z-20 bg-bg safe-top">
-                <header class="h-14 flex items-center justify-between px-5 border-b border-border shrink-0">
-                    <button @click="switchView('home')" class="text-text hover:opacity-50 p-1 -ml-1"><i data-lucide="chevron-left" class="w-6 h-6 stroke-[1.5]"></i></button>
-                    <span class="text-[14px] tracking-[0.4em] font-medium">万象法则</span>
+                <header class="h-14 flex items-center justify-between px-6 shrink-0 bg-bg z-10">
+                    <button @click="switchView('home')" class="text-text hover:opacity-50 p-1 -ml-1"><i data-lucide="arrow-left" class="w-5 h-5 stroke-[1.2]"></i></button>
+                    <span class="text-[13px] tracking-[0.5em] font-medium text-gray ml-2">天地大道</span>
                     <div class="w-8"></div>
                 </header>
 
-                <main class="flex-1 overflow-y-auto p-6 space-y-10 pb-24">
-                    
-                    <section>
-                        <h3 class="text-[12px] text-gray tracking-[0.5em] border-b border-border pb-3 mb-5 font-bold">卷面</h3>
-                        <div class="space-y-6 text-[13px]">
-                            <div class="flex justify-between items-center group">
-                                <span class="tracking-[0.3em] text-gray group-hover:text-text transition-colors">天时 (自动暗黑)</span>
-                                <input type="checkbox" v-model="settings.autoDarkMode" class="mag-checkbox">
-                            </div>
-                            <div class="flex justify-between items-center group" :class="{'opacity-40 pointer-events-none': settings.autoDarkMode}">
-                                <span class="tracking-[0.3em] text-gray group-hover:text-text transition-colors">长夜 (深色模式)</span>
-                                <input type="checkbox" v-model="settings.darkMode" class="mag-checkbox">
-                            </div>
-                            <div class="flex justify-between items-center group">
-                                <span class="tracking-[0.3em] text-gray group-hover:text-text transition-colors">显露真容 (头像)</span>
-                                <input type="checkbox" v-model="settings.showAvatar" class="mag-checkbox">
-                            </div>
-                            <div class="flex justify-between items-center group">
-                                <span class="tracking-[0.3em] text-gray group-hover:text-text transition-colors">呼唤名讳 (昵称)</span>
-                                <input type="checkbox" v-model="settings.showName" class="mag-checkbox">
-                            </div>
-                            <div class="pt-3">
-                                <div class="flex justify-between mb-3"><span class="tracking-[0.3em] text-gray">墨迹大小</span><span class="text-[12px] text-gray font-sans">{{settings.fontSize}}</span></div>
-                                <input type="range" v-model.number="settings.fontSize" min="12" max="24" class="w-full accent-text h-1 bg-border appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-text cursor-pointer">
+                <main class="flex-1 overflow-y-auto px-6 py-6 space-y-12 pb-28 hide-scrollbar">
+
+                    <section class="borderless-group">
+                        <h3 class="text-[10px] text-gray tracking-[0.8em] mb-4 text-center opacity-50">阴阳</h3>
+                        <div>
+                            <div class="borderless-item"><span>天地同息</span><input type="checkbox" v-model="settings.autoDarkMode" class="mag-checkbox"></div>
+                            <div class="borderless-item" :class="{'opacity-30 pointer-events-none': settings.autoDarkMode}"><span>永夜沉沦</span><input type="checkbox" v-model="settings.darkMode" class="mag-checkbox"></div>
+                            <div class="borderless-item"><span>真容浮现</span><input type="checkbox" v-model="settings.showAvatar" class="mag-checkbox"></div>
+                            <div class="borderless-item"><span>直呼其名</span><input type="checkbox" v-model="settings.showName" class="mag-checkbox"></div>
+                            <div class="pt-6 relative">
+                                <div class="flex justify-between mb-4 px-2"><span class="tracking-[0.3em] text-gray text-[12px]">气蕴丰减</span><span class="text-[12px] text-gray font-sans">{{settings.fontSize}}</span></div>
+                                <input type="range" v-model.number="settings.fontSize" min="12" max="24" class="w-full h-[1px] bg-border appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-text cursor-pointer outline-none transition-all">
                             </div>
                         </div>
                     </section>
 
-                    <section>
-                        <h3 class="text-[12px] text-gray tracking-[0.5em] border-b border-border pb-3 mb-5 font-bold">交互</h3>
-                        <div class="space-y-6 text-[13px]">
-                            <div class="flex justify-between items-center group">
-                                <span class="tracking-[0.3em] text-gray group-hover:text-text transition-colors">梵音显化 (音乐匣)</span>
-                                <input type="checkbox" v-model="settings.showMusic" class="mag-checkbox">
+                    <section class="borderless-group">
+                        <h3 class="text-[10px] text-gray tracking-[0.8em] mb-4 text-center opacity-50">造化</h3>
+                        <div>
+                            <div class="borderless-item"><span>泠音相伴</span><input type="checkbox" v-model="settings.showMusic" class="mag-checkbox"></div>
+                            <div class="borderless-item"><span>落子生音</span><input type="checkbox" v-model="settings.soundEnabled" class="mag-checkbox"></div>
+                            <div class="borderless-item"><span>鸿雁传书</span><input type="checkbox" v-model="settings.notification" @change="reqNotification" class="mag-checkbox"></div>
+                            <div class="borderless-item"><span>客阅无言</span><input type="checkbox" v-model="settings.readButNoReply" class="mag-checkbox"></div>
+                            <div class="borderless-item"><span>连珠缀玉</span><input type="checkbox" v-model="settings.combineReplies" class="mag-checkbox"></div>
+
+                            <div class="flex items-end justify-between py-4 px-2 transition-colors mt-2">
+                                <span class="tracking-[0.3em] text-gray text-[12px]">因果流转 </span>
+                                <input type="number" v-model.number="settings.autoReplyInterval" class="w-12 bg-transparent text-right focus:outline-none font-sans text-text border-b border-border/50 focus:border-text">
                             </div>
-                            <div class="flex justify-between items-center group">
-                                <span class="tracking-[0.3em] text-gray group-hover:text-text transition-colors">回声 (音效)</span>
-                                <input type="checkbox" v-model="settings.soundEnabled" class="mag-checkbox">
-                            </div>
-                            <div class="flex justify-between items-center group">
-                                <span class="tracking-[0.3em] text-gray group-hover:text-text transition-colors">惊铃 (通知)</span>
-                                <input type="checkbox" v-model="settings.notification" @change="reqNotification" class="mag-checkbox">
-                            </div>
-                            <div class="flex justify-between items-center group">
-                                <span class="tracking-[0.3em] text-gray group-hover:text-text transition-colors">客阅无言 (概率不回)</span>
-                                <input type="checkbox" v-model="settings.readButNoReply" class="mag-checkbox">
-                            </div>
-                            <div class="flex justify-between items-center group">
-                                <span class="tracking-[0.3em] text-gray group-hover:text-text transition-colors">辞藻交织 (长句组合)</span>
-                                <input type="checkbox" v-model="settings.combineReplies" class="mag-checkbox">
-                            </div>
-                            <div class="flex items-end justify-between border-b border-border pb-2 focus-within:border-text transition-colors mt-6">
-                                <span class="tracking-[0.3em] text-gray mb-1">寄言间隔 (分钟)</span>
-                                <input type="number" v-model.number="settings.autoReplyInterval" class="w-16 bg-transparent text-right focus:outline-none font-sans text-text">
-                            </div>
-                            <div class="flex items-end justify-between border-b border-border pb-2 focus-within:border-text transition-colors">
-                                <span class="tracking-[0.3em] text-gray mb-1">斟酌延迟 (秒)</span>
-                                <input type="number" v-model.number="settings.replyDelay" class="w-16 bg-transparent text-right focus:outline-none font-sans text-text">
+                            <div class="flex items-end justify-between py-4 px-2 transition-colors">
+                                <span class="tracking-[0.3em] text-gray text-[12px]">缓酌闲吟</span>
+                                <input type="number" v-model.number="settings.replyDelay" class="w-12 bg-transparent text-right focus:outline-none font-sans text-text border-b border-border/50 focus:border-text">
                             </div>
                         </div>
                     </section>
 
-                    <section>
-                        <h3 class="text-[12px] text-gray tracking-[0.5em] border-b border-border pb-3 mb-5 font-bold">典藏全宗</h3>
-                        <div class="space-y-4">
-                            <button @click="handleExport" class="w-full py-3 border border-border text-gray hover:border-text hover:text-text transition-colors tracking-[0.5em] text-[12px]">
-                                拓印留档
-                            </button>
-                            <label class="w-full py-3 border border-border text-gray hover:border-text hover:text-text transition-colors tracking-[0.5em] text-[12px] flex justify-center cursor-pointer">
-                                纳藏旧卷
-                                <input type="file" accept=".json" class="hidden" @change="handleImport">
-                            </label>
-                            <button @click="clearData" class="w-full py-3 border border-red-900/30 text-red-500/70 hover:bg-red-500/10 hover:text-red-500 transition-colors tracking-[0.5em] text-[12px] mt-4">
-                                付之一炬 (清空)
-                            </button>
+                    <section class="pt-8">
+                        <h3 class="text-[10px] tracking-[0.8em] mb-6 text-center text-red-900/40 dark:text-red-400/50">劫数</h3>
+                        <div class="flex gap-4 mb-4">
+                            <button @click="handleExport" class="flex-1 py-3.5 border border-border/50 text-gray hover:text-text transition-colors tracking-[0.5em] text-[12px] rounded-lg">抽离</button>
+                            <label class="flex-1 py-3.5 border border-border/50 text-gray hover:text-text transition-colors tracking-[0.5em] text-[12px] flex justify-center cursor-pointer rounded-lg">注入<input type="file" accept=".json" class="hidden" @change="handleImport"></label>
                         </div>
+                        <button @click="clearData" class="w-full py-4 text-red-400/80 hover:text-red-500 hover:bg-red-500/5 transition-colors tracking-[0.5em] text-[12px] rounded-lg">
+                            梵天归墟
+                        </button>
                     </section>
                 </main>
             </div>
         </transition>
 
-        <!-- 群组结界 -->
-        <transition name="fade">
-            <div v-if="showGroupDrawer" class="fixed inset-0 z-50 glass-mask flex flex-col justify-end" @click.self="showGroupDrawer=false">
-                <div class="bg-bg h-[75vh] border-t border-border flex flex-col rounded-t-xl shadow-2xl transition-transform" @click.stop>
-                    <header class="h-14 flex items-center justify-between px-6 border-b border-border shrink-0">
-                        <span class="text-[14px] tracking-[0.3em] font-medium">众生结缘 (群组)</span>
-                        <button @click="showGroupDrawer=false" class="text-text hover:opacity-50 p-2"><i data-lucide="chevron-down" class="w-6 h-6 stroke-[1.5]"></i></button>
+        <transition name="drawer-up">
+            <div v-if="showGroupDrawer" class="fixed inset-0 z-[60] glass-mask flex flex-col justify-end" @click.self="showGroupDrawer=false">
+                <div class="bg-bg h-[75vh] flex flex-col rounded-t-3xl shadow-[0_-20px_60px_rgba(0,0,0,0.1)] transition-transform border border-border/20 border-b-0" @click.stop>
+                    <header class="h-16 flex items-center justify-between px-8 shrink-0">
+                        <span class="text-[13px] tracking-[0.4em] font-medium text-gray">众生印记</span>
+                        <button @click="showGroupDrawer=false" class="text-text hover:opacity-50"><i data-lucide="chevron-down" class="w-6 h-6 stroke-[1.2]"></i></button>
                     </header>
-                    <div class="p-6 border-b border-border flex justify-between items-center shrink-0">
-                        <span class="text-[13px] tracking-[0.2em] text-gray">开启群聚模式</span>
+                    <div class="px-8 py-4 flex justify-between items-center shrink-0">
+                        <span class="text-[14px] tracking-[0.3em] font-light">引灵聚众</span>
                         <input type="checkbox" v-model="chatState.isGroupMode" @change="debouncedSave" class="mag-checkbox">
                     </div>
-                    <div class="flex-1 overflow-y-auto p-6 space-y-4" :class="{'opacity-40 pointer-events-none': !chatState.isGroupMode}">
-                        <div v-for="member in chatState.groupMembers" :key="member.id" class="flex items-center gap-4 border border-border bg-bg/50 p-3 relative hover:border-gray transition-colors">
-                            <div class="w-10 h-10 border border-border overflow-hidden flex items-center justify-center cursor-pointer shrink-0" @click="editGroupMember(member)">
+                    <div class="flex-1 overflow-y-auto px-6 py-4 space-y-3 hide-scrollbar relative" :class="{'opacity-30 pointer-events-none': !chatState.isGroupMode}">
+                        <div v-for="member in chatState.groupMembers" :key="member.id" class="flex items-center gap-4 py-3 px-2 relative group transition-colors rounded-lg hover:bg-border/10">
+<div class="w-10 h-10 border border-border/50 flex items-center justify-center cursor-pointer shrink-0 rounded-sm overflow-hidden bg-bg/50" @click="editGroupMember(member)">
                                 <img v-if="member.avatar" :src="member.avatar" class="w-full h-full object-cover">
                                 <span v-else class="text-[13px] text-gray font-medium">{{ member.name.charAt(0) }}</span>
                             </div>
-                            <input v-model="member.name" @blur="debouncedSave" class="flex-1 bg-transparent border-b border-transparent focus:border-border text-[14px] tracking-wider text-text">
-                            <!-- 永久显示删除按钮，方便移动端操作 -->
-                            <button @click="removeGroupMember(member.id)" class="text-red-400 hover:text-red-600 p-2"><i data-lucide="trash-2" class="w-4 h-4 stroke-[1.5]"></i></button>
+                            <input v-model="member.name" @blur="debouncedSave" class="flex-1 bg-transparent border-b border-transparent focus:border-border/50 text-[14px] tracking-wider text-text outline-none pb-1 font-light">
+                            <button @click="removeGroupMember(member.id)" class="text-gray/30 hover:text-red-400 p-2 opacity-0 group-hover:opacity-100 transition-all"><i data-lucide="minus-circle" class="w-4 h-4 stroke-[1.2]"></i></button>
                         </div>
-                        <button @click="addGroupMember" class="w-full py-4 border border-dashed border-gray text-gray text-[12px] tracking-[0.4em] hover:text-text hover:border-text transition-colors mt-2">迎客 (添加)</button>
+                        <button @click="addGroupMember" class="w-full py-5 text-gray/50 text-[12px] tracking-[0.4em] hover:text-text transition-colors mt-4 bg-border/5 rounded-lg border border-dashed border-border/30">接引游魂</button>
                     </div>
                 </div>
             </div>
@@ -752,44 +784,46 @@ createApp({
         const currentView = ref('home');
         const unreadCount = ref(0);
         const toast = ref({ show: false, msg: '' });
-        
+
         const homeMenus = [
-            { name: '飞鸽传书', view: 'chat', icon: 'feather' },
-            { name: '藏经卷宗', view: 'library', icon: 'scroll-text' },
-            { name: '流年印记', view: 'timeline', icon: 'hourglass' },
-            { name: '岁时风物', view: 'aesthetic', icon: 'image' },
-            { name: '洞察秋毫', view: 'insight', icon: 'eye' },
-            { name: '万象法则', view: 'settings', icon: 'sliders-horizontal' }
+            { name: '灵犀明卷', view: 'chat', icon: 'message-square' },
+            { name: '琅嬛秘典', view: 'library', icon: 'book-open' },
+            { name: '长明孤灯', view: 'insight', icon: 'pie-chart' },
+            { name: '大象无形', view: 'aesthetic', icon: 'image' },
+            { name: '天地大道', view: 'settings', icon: 'sliders' }
         ];
+
 
         const messages = ref([]);
         const inputText = ref('');
         const isTyping = ref(false);
 
-        const profiles = reactive({ me: { name: '吾', avatar: '' }, them: { name: '客', avatar: '' } });
-        const settings = reactive({ 
-            darkMode: false, autoDarkMode: true, chatBgImg: '', customBgs: [], customBubbleCss: '',
-            showAvatar: true, showName: false, avatarRadius: 10, showMusic: true,
+        const profiles = reactive({ me: { name: '本源', avatar: '' }, them: { name: '客', avatar: '' } });
+        const settings = reactive({
+            darkMode: true, autoDarkMode: false, chatBgImg: '', customBgs: [], customBubbleCss: '',
+            showAvatar: true, showName: false, avatarRadius: 0,showMusic: true,
             soundEnabled: true, notification: false, autoReplyInterval: 0, replyDelay: 3,
-            customFontUrl: '', customFontName: '', fontSize: 14,
+            customCss: '', fontSize: 13,
             readButNoReply: false, combineReplies: false
         });
 
-        const chatState = reactive({ isSearching: false, keyword: '', results: [], currentIdx: 0, isGroupMode: false, groupMembers: [] });
+        const chatState = reactive({ isSearching: false, keyword: '', results: [], currentIdx: 0, isGroupMode: false, groupMembers: [], showSearch: false });
         const showGroupDrawer = ref(false);
 
         const audio = ref(null);
-        const playlist = ref([]);
+        const playlist = ref([
+            { title: "ANSWER", sub: "들리니 I'm callin' you", url: "https://files.catbox.moe/hzpr94.mp3", isCustom: true },
+            { title: "All I Have Is Love", sub: "Feel the beating of my heart", url: "http://music.163.com/song/media/outer/url?id=1940368.mp3", isCustom: true },
+            { title: "第三个吻痕", sub: "非要做 贪心的坏人", url: "https://img.heliar.top/file/1773902740144_下载您的文件_—_Convertio_1425997963.mp3", isCustom: true }
+        ]);
         const showPlaylist = ref(false);
-        const musicState = reactive({ minimized: true, x: 30, y: 150, mode: 0, currentIndex: 0 }); 
+        const musicState = reactive({ minimized: true, x: 40, y: 150, mode: 0, currentIndex: 0 });
         const currentSong = computed(() => playlist.value[musicState.currentIndex] || {});
-        let dragInfo = { isDragging: false, startX: 0, startY: 0, initialX: 0, initialY: 0, startTime: 0 };
+        const isPlaying = ref(false); 
+        let isDraggingMusic = false;
+        let mdStartX, mdStartY, mdInitX, mdInitY, mdStartTime;
 
-        const timelineTab = ref('anni');
-        const anniversaries = ref([]);
-        const periods = ref([]);
-
-        const replyGroups = ref([{ id: genId(), name: '初卷', replies: [{ id: genId(), text: '静水流深。', enabled: true }] }]);
+        const replyGroups = ref([{ id: genId(), name: '无痕录', replies: [{ id: genId(), text: '清风徐来，水波不兴。', enabled: true }] }]);
         const currentGroupId = ref('');
         const currentGroup = computed(() => replyGroups.value.find(g => g.id === currentGroupId.value));
 
@@ -800,149 +834,143 @@ createApp({
 
         const modal = reactive({ show: false, type: '', title: '', message: '', input: '', placeholder: '', options: [], profileData: {}, songData: {}, onConfirm: null });
 
-        const STORAGE_KEY = 'liubai_v10_data';
-        let saveTimeout = null; let audioCtx = null; let sortableInst = null; let activeReplyTimer = null;
+        const STORAGE_KEY = 'liubai_v13_data';
+        let saveTimeout = null; let audioCtx = null; let sortableInst = null; let activeReplyTimer = null; let toastTimeout = null;
 
-        const showToast = (msg) => { toast.value = { show: true, msg }; setTimeout(() => toast.value.show = false, 3000); };
+        const showToast = (msg) => { toast.value.show = false; if(toastTimeout) clearTimeout(toastTimeout); nextTick(() => { toast.value = { show: true, msg }; toastTimeout = setTimeout(() => toast.value.show = false, 2500); }); };
 
         const initData = async () => {
-            localforage.config({ name: 'LiuBaiApp', storeName: 'v10' });
+            localforage.config({ name: 'LiuBaiApp', storeName: 'v13' });
             const stored = await localforage.getItem(STORAGE_KEY);
             if (stored) {
                 if(stored.messages) messages.value = stored.messages;
                 if(stored.profiles) Object.assign(profiles, stored.profiles);
                 if(stored.settings) Object.assign(settings, { ...settings, ...stored.settings });
                 if(stored.replyGroups) { replyGroups.value = stored.replyGroups; currentGroupId.value = replyGroups.value[0]?.id; }
-                if(stored.anniversaries) anniversaries.value = stored.anniversaries;
-                if(stored.periods) periods.value = stored.periods;
                 if(stored.chatState) { chatState.isGroupMode = stored.chatState.isGroupMode || false; chatState.groupMembers = stored.chatState.groupMembers || []; }
-                if(stored.playlist) playlist.value = stored.playlist;
-                if(stored.musicState) { musicState.x = stored.musicState.x||30; musicState.y = stored.musicState.y||150; musicState.mode = stored.musicState.mode||0; }
-            } else { 
-                currentGroupId.value = replyGroups.value[0]?.id; 
-            }
-            
-            inputText.value = localStorage.getItem('liubai_draft') || '';
-            setupSystemTheme();
-            setupAudio();
-            setTimeout(() => { appState.introFading = true; setTimeout(() => appState.showIntro = false, 1500); }, 4500);
+                if(stored.playlist && stored.playlist.length) playlist.value = stored.playlist;
+                if(stored.musicState) { musicState.x = stored.musicState.x||40; musicState.y = stored.musicState.y||150; musicState.mode = stored.musicState.mode||0; }
+            } else { currentGroupId.value = replyGroups.value[0]?.id; }
+
+            inputText.value = localStorage.getItem('liubai_v13_draft') || '';
+            setupSystemTheme(); setupAudio();
+            setTimeout(() => { appState.introFading = true; setTimeout(() => appState.showIntro = false, 1500); }, 3800);
         };
 
         const debouncedSave = () => {
             if(saveTimeout) clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(async () => { await localforage.setItem(STORAGE_KEY, JSON.parse(JSON.stringify({ messages: messages.value, profiles, settings, replyGroups: replyGroups.value, anniversaries: anniversaries.value, periods: periods.value, chatState: { isGroupMode: chatState.isGroupMode, groupMembers: chatState.groupMembers }, playlist: playlist.value, musicState: {x: musicState.x, y: musicState.y, mode: musicState.mode} }))); }, 500);
+            saveTimeout = setTimeout(async () => { await localforage.setItem(STORAGE_KEY, JSON.parse(JSON.stringify({ messages: messages.value, profiles, settings, replyGroups: replyGroups.value, chatState: { isGroupMode: chatState.isGroupMode, groupMembers: chatState.groupMembers }, playlist: playlist.value, musicState: {x: musicState.x, y: musicState.y, mode: musicState.mode} }))); }, 500);
         };
-        watch([messages, profiles, settings, anniversaries, periods, () => chatState.isGroupMode, () => chatState.groupMembers, playlist, () => musicState.x, () => musicState.y, () => musicState.mode], debouncedSave, { deep: true });
-        const saveDraft = () => localStorage.setItem('liubai_draft', inputText.value);
+        watch([messages, profiles, settings, () => chatState.isGroupMode, () => chatState.groupMembers, playlist, () => musicState.x, () => musicState.y, () => musicState.mode], debouncedSave, { deep: true });
+        const saveDraft = () => localStorage.setItem('liubai_v13_draft', inputText.value);
 
         const setupSystemTheme = () => { const mq = window.matchMedia('(prefers-color-scheme: dark)'); if(settings.autoDarkMode) settings.darkMode = mq.matches; mq.addEventListener('change', e => { if(settings.autoDarkMode) settings.darkMode = e.matches; }); };
         watch(() => settings.autoDarkMode, val => { if(val) settings.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches; });
         watch(() => settings.darkMode, val => document.documentElement.classList.toggle('dark', val), {immediate: true});
 
-        const customStyleVars = computed(() => { let style = {}; if(settings.customFontName) style['--font-family'] = settings.customFontName; return style; });
-        watch(() => [settings.customFontUrl, settings.customFontName], () => { const fontEl = document.getElementById('custom-font-injection'); if (settings.customFontUrl && fontEl) { if(settings.customFontUrl.includes('css')) fontEl.innerHTML = `@import url('${settings.customFontUrl}');`; else { fontEl.innerHTML = `@font-face { font-family: 'CustomFont'; src: url('${settings.customFontUrl}'); }`; if(!settings.customFontName) settings.customFontName = 'CustomFont'; } } });
-        watch(() => settings.customBubbleCss, (val) => { let el = document.getElementById('dynamic-bubble-style'); if (!el) { el = document.createElement('style'); el.id = 'dynamic-bubble-style'; document.head.appendChild(el); } el.innerHTML = val || ''; }, { immediate: true });
+        const customStyleVars = computed(() => { return {}; });
+        watch(() => settings.customCss, (val) => { const fontEl = document.getElementById('custom-font-injection'); if(fontEl) fontEl.innerHTML = val || ''; }, {immediate: true});
+        watch(() => settings.customBubbleCss, (val) => { let el = document.getElementById('dynamic-bubble-style'); el.innerHTML = val || ''; }, { immediate: true });
 
-        const showModal = (type, title, opts = {}) => {
-            modal.type = type; modal.title = title; modal.message = opts.message || '';
-            modal.input = opts.input || ''; modal.placeholder = opts.placeholder || ''; modal.options = opts.options || [];
-            modal.onConfirm = opts.onConfirm; modal.show = true; modal.role = opts.role; modal.extData = opts.extData;
-            if(type === 'profile') modal.profileData = JSON.parse(JSON.stringify(opts.profileData || profiles[opts.role]));
-            if(type === 'song') modal.songData = opts.songData ? JSON.parse(JSON.stringify(opts.songData)) : { title:'', sub:'', url:'', isCustom:true };
-        };
+        const showModal = (type, title, opts = {}) => { modal.type = type; modal.title = title; modal.message = opts.message || ''; modal.input = opts.input || ''; modal.placeholder = opts.placeholder || ''; modal.options = opts.options || []; modal.onConfirm = opts.onConfirm; modal.show = true; modal.role = opts.role; modal.extData = opts.extData; if(type === 'profile') modal.profileData = JSON.parse(JSON.stringify(opts.profileData || profiles[opts.role])); if(type === 'song') modal.songData = opts.songData ? JSON.parse(JSON.stringify(opts.songData)) : { title:'', sub:'', url:'', isCustom:true }; };
         const closeModal = () => modal.show = false;
-        const confirmModal = () => {
-            if(modal.onConfirm) modal.onConfirm(modal.type === 'profile' ? modal.profileData : (modal.type === 'song' ? modal.songData : modal.input));
-            if(modal.type === 'profile') { if(modal.role === 'me' || modal.role === 'them') profiles[modal.role] = modal.profileData; else if(modal.role === 'groupMember') { const idx = chatState.groupMembers.findIndex(m => m.id === modal.extData); if(idx > -1) chatState.groupMembers[idx] = { ...chatState.groupMembers[idx], ...modal.profileData }; } }
-            closeModal(); 
-        };
+        const confirmModal = () => { if(modal.onConfirm) modal.onConfirm(modal.type === 'profile' ? modal.profileData : (modal.type === 'song' ? modal.songData : modal.input)); if(modal.type === 'profile') { if(modal.role === 'me' || modal.role === 'them') profiles[modal.role] = modal.profileData; else if(modal.role === 'groupMember') { const idx = chatState.groupMembers.findIndex(m => m.id === modal.extData); if(idx > -1) chatState.groupMembers[idx] = { ...chatState.groupMembers[idx], ...modal.profileData }; } } closeModal(); };
 
-        const editProfile = (role) => showModal('profile', `重绘容颜`, { role });
-        const handleImgUpload = (e, target) => { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = ev => { if(target==='bg') { if(!settings.customBgs) settings.customBgs = []; settings.customBgs.push(ev.target.result); settings.chatBgImg = ev.target.result; } else modal.profileData.avatar = ev.target.result; }; r.readAsDataURL(f); e.target.value = ''; };
+        const editProfile = (role) => showModal('profile', `形魂重塑`, { role });
+        const handleImgUpload = (e, target) => { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = ev => { if(target==='bg') { if(!settings.customBgs) settings.customBgs = []; settings.customBgs.push(ev.target.result); settings.chatBgImg = ev.target.result; } else modal.profileData.avatar = ev.target.result;}; r.readAsDataURL(f); e.target.value = ''; };
         const removeCustomBg = (idx) => { const url = settings.customBgs[idx]; settings.customBgs.splice(idx, 1); if(settings.chatBgImg === url) settings.chatBgImg = ''; };
 
         const initAudio = () => { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); };
-        const playTone = (type) => { if (!settings.soundEnabled) return; initAudio(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); if (type === 'send') { osc.type = 'sine'; osc.frequency.setValueAtTime(300, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.05); gain.gain.setValueAtTime(0.03, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05); osc.start(); osc.stop(audioCtx.currentTime + 0.05); } else { osc.type = 'triangle'; osc.frequency.setValueAtTime(200, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 0.1); gain.gain.setValueAtTime(0, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.05); gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.1); osc.start(); osc.stop(audioCtx.currentTime + 0.1); } };
-        const reqNotification = () => { if(settings.notification && Notification.permission !== 'granted') Notification.requestPermission(); };
-        const sendNotification = (senderName, msg, icon) => { if(settings.notification && Notification.permission === 'granted' && document.visibilityState === 'hidden') { new Notification(senderName, { body: msg, icon: icon }); unreadCount.value++; } };
+        const playTone = (type) => { if (!settings.soundEnabled) return; initAudio(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); const t = audioCtx.currentTime; if (type === 'send') { osc.type = 'sine'; osc.frequency.setValueAtTime(300, t); osc.frequency.exponentialRampToValueAtTime(150, t + 0.1); gain.gain.setValueAtTime(0); gain.gain.setValueAtTime(0.1, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1); osc.start(t); osc.stop(t + 0.15); } else { osc.type = 'sine'; osc.frequency.setValueAtTime(600, t); osc.frequency.exponentialRampToValueAtTime(300, t + 0.2); gain.gain.setValueAtTime(0.08, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2); osc.start(t); osc.stop(t + 0.25); } };
+
+        const reqNotification = () => { if(settings.notification && window.Notification && Notification.permission !== 'granted') Notification.requestPermission(); };
+        const sendNotification = (senderName, msg, icon) => { if(settings.notification && window.Notification && Notification.permission === 'granted' && document.visibilityState === 'hidden') { try { new Notification(senderName, { body: msg, icon: icon, requireInteraction: true }); }catch(e){} unreadCount.value++; } else if (document.visibilityState === 'hidden') { unreadCount.value++; } };
         document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") unreadCount.value = 0; });
 
         const scrollToBottom = () => nextTick(() => { const el = document.getElementById('chat-container'); if(el) el.scrollTop = el.scrollHeight; });
         watch(currentView, (val) => { if(val === 'chat') { unreadCount.value = 0; scrollToBottom(); } if(val === 'library') nextTick(initSortable); nextTick(() => { if(window.lucide) lucide.createIcons(); }); });
 
-        const getSenderProfile = (id) => { if(id === 'me') return profiles.me; if(id === 'them') return profiles.them; const gm = chatState.groupMembers.find(m => m.id === id); return gm ? gm : { name: '客', avatar: '' }; };
+        const getSenderProfile = (id) => { if(id === 'me') return profiles.me; if(id === 'them') return profiles.them; const gm = chatState.groupMembers.find(m => m.id === id); return gm ? gm : { name: '旅人', avatar: '' }; };
 
         const sendMessage = (sender, content) => { if (!content) return; messages.value.push({ id: genId(), sender, content, timestamp: Date.now() }); playTone(sender === 'me' ? 'send' : 'receive'); scrollToBottom(); if(sender !== 'me') sendNotification(getSenderProfile(sender).name, content, getSenderProfile(sender).avatar); };
-        const getDelayMs = () => { let ms = parseInt(settings.replyDelay) * 1000; if(isNaN(ms) || ms < 0) ms = 1000; return ms + (Math.random() * 500); };
-        const handleSend = () => { const txt = inputText.value.trim(); if (!txt) return; sendMessage('me', txt); inputText.value = ''; saveDraft(); triggerReply(getDelayMs()); };
+
+        const getDelayMs = () => { let maxMs = parseInt(settings.replyDelay) * 1000; if(isNaN(maxMs) || maxMs < 0) maxMs = 2000; return Math.max(500, Math.random() * maxMs); };
+
+        const handleSend = () => { const txt = inputText.value.trim(); if (!txt) return; sendMessage('me', txt); inputText.value = ''; saveDraft(); };
         const forceReply = () => { triggerReply(getDelayMs(), true); };
+
         const triggerReply = async (delayMs, isForce = false) => {
             if (isTyping.value) return;
-            if (isForce && settings.readButNoReply && Math.random() < 0.25) { showToast("客已阅，无言"); return; }
+            if (isForce && settings.readButNoReply && Math.random() < 0.25) { showToast("其默如渊"); return; }
             let pool = []; replyGroups.value.forEach(g => g.replies.forEach(r => { if(r.enabled && r.text) pool.push(r.text); })); if(pool.length === 0) return;
-            isTyping.value = true; scrollToBottom();
+
+            isTyping.value = true;
+            if(currentView.value === 'chat') scrollToBottom();
+
             setTimeout(async () => {
                 let count = 1; if(isForce && !settings.combineReplies) count = Math.floor(Math.random() * 2) + 1;
                 for(let i=0; i<count; i++) {
                     let targetSender = 'them'; if(chatState.isGroupMode && chatState.groupMembers.length > 0) { const rIdx = Math.floor(Math.random() * chatState.groupMembers.length); targetSender = chatState.groupMembers[rIdx].id; }
                     let finalMsg = pool[Math.floor(Math.random() * pool.length)];
                     if (settings.combineReplies) { const cCount = Math.floor(Math.random() * 3) + 1; const parts = new Set([finalMsg]); while(parts.size < cCount) { parts.add(pool[Math.floor(Math.random() * pool.length)]); } finalMsg = Array.from(parts).join(' '); }
-                    sendMessage(targetSender, finalMsg); if(i < count -1) { scrollToBottom(); await new Promise(r => setTimeout(r, 800)); }
+                    sendMessage(targetSender, finalMsg);
+                    if(i < count - 1) { let miniDelay = Math.random() * 1000 + 500; await new Promise(r => setTimeout(r, miniDelay)); }
                 }
                 isTyping.value = false;
+                if(currentView.value === 'chat') scrollToBottom();
             }, delayMs);
         };
         watch(() => settings.autoReplyInterval, (val) => { if(activeReplyTimer) clearInterval(activeReplyTimer); let mins = parseFloat(val); if(mins > 0) activeReplyTimer = setInterval(() => forceReply(), mins * 60 * 1000); }, { immediate: true });
-        const deleteMsg = (id) => showModal('confirm', '拂去微尘', { message: '一旦拂去，再无踪影。', onConfirm: () => messages.value = messages.value.filter(m => m.id !== id) });
 
-        const toggleSearch = () => { chatState.isSearching = !chatState.isSearching; chatState.keyword=''; chatState.results=[]; };
-        const executeSearch = () => { const k = chatState.keyword.trim(); if(!k) { chatState.results=[]; return; } chatState.results = messages.value.filter(m => m.content.includes(k)).map(m=>m.id); if(chatState.results.length>0) { chatState.currentIdx = chatState.results.length-1; jumpToMsg(); } };
+        const deleteMsg = (id) => { if(id === 'all') showModal('confirm', '拂尘去迹', { message: '一旦散去所有对弈的印记，这方天地将归于虚无，可愿如此？', onConfirm: () => { messages.value = []; debouncedSave(); } }); else showModal('confirm', '抹除残痕', { message: '一字一念，当真散去？', onConfirm: () => messages.value = messages.value.filter(m => m.id !== id) }); };
+
+        const executeSearch = () => { const k = chatState.keyword.trim(); if(!k) { chatState.results=[]; return; } chatState.results = messages.value.filter(m => m.content.includes(k)).map(m=>m.id); if(chatState.results.length>0) { chatState.currentIdx = chatState.results.length-1; jumpToMsg(); } else { showToast("云深不知处"); } };
         const jumpSearch = (dir) => { chatState.currentIdx += dir; if(chatState.currentIdx < 0) chatState.currentIdx = chatState.results.length-1; if(chatState.currentIdx >= chatState.results.length) chatState.currentIdx = 0; jumpToMsg(); };
-        const jumpToMsg = () => { const el = document.getElementById('msg-'+chatState.results[chatState.currentIdx]); if(el) el.scrollIntoView({behavior:'smooth', block:'center'}); };
-        const highlightText = (text) => { if(chatState.keyword && chatState.results.length>0) return text.replace(new RegExp(`(${chatState.keyword})`, 'gi'), '<span class="highlight">$1</span>'); return text; };
+        const jumpToMsg = () => { const el = document.getElementById('msg-'+chatState.results[chatState.currentIdx]); if(el) window.requestAnimationFrame(()=> { el.scrollIntoView({behavior:'smooth', block:'center'}); }); };
+        watch(() => chatState.showSearch, (val) => { if(!val) { chatState.keyword=''; chatState.results=[]; } });
 
-        const openGroupManager = () => { showGroupDrawer.value = true; };
-        const addGroupMember = () => chatState.groupMembers.push({ id: genId(), name: `客·${chatState.groupMembers.length+1}`, avatar: '' });
+        const addGroupMember = () => chatState.groupMembers.push({ id: genId(), name: `灵体·${chatState.groupMembers.length+1}`, avatar: '' });
         const removeGroupMember = (id) => chatState.groupMembers = chatState.groupMembers.filter(m => m.id !== id);
-        const editGroupMember = (m) => showModal('profile', '重绘容颜', { role: 'groupMember', extData: m.id, profileData: m });
+        const editGroupMember = (m) => showModal('profile', '再刻其印', { role: 'groupMember', extData: m.id, profileData: m });
 
-        const addGroup = () => showModal('prompt', '辟新卷', { placeholder: '卷名...', onConfirm: (n) => { if(n) { const id = genId(); replyGroups.value.push({ id, name: n, replies: [] }); currentGroupId.value = id; debouncedSave(); } } });
-        const deleteGroup = (id) => showModal('confirm', '焚毁此卷', { onConfirm: () => { replyGroups.value = replyGroups.value.filter(g => g.id !== id); currentGroupId.value = replyGroups.value[0]?.id; debouncedSave(); } });
+        const addGroup = () => showModal('prompt', '另辟琅域', { placeholder: '域名...', onConfirm: (n) => { if(n) { const id = genId(); replyGroups.value.push({ id, name: n, replies: [] }); currentGroupId.value = id; debouncedSave(); } } });
+        const deleteGroup = (id) => showModal('confirm', '焚毁此域', { onConfirm: () => { replyGroups.value = replyGroups.value.filter(g => g.id !== id); currentGroupId.value = replyGroups.value[0]?.id; debouncedSave(); } });
         const addReplyToCurrent = () => { if(currentGroup.value) { currentGroup.value.replies.unshift({ id: genId(), text: '', enabled: true }); debouncedSave(); } };
-        const batchAddReplies = () => showModal('batchAdd', '泼墨倾泻', { onConfirm: (val) => { if(!val) return; const lines = val.split('\n').map(l=>l.trim()).filter(Boolean); lines.forEach(text => currentGroup.value.replies.push({ id: genId(), text, enabled: true })); debouncedSave(); }});
+        const batchAddReplies = () => showModal('batchAdd', '落珠如雨', { onConfirm: (val) => { if(!val) return; const lines = val.split('\n').map(l=>l.trim()).filter(Boolean); lines.forEach(text => currentGroup.value.replies.push({ id: genId(), text, enabled: true })); debouncedSave(); }});
         const batchAction = (action) => {
             if(selectedLibIds.value.length === 0 || !currentGroup.value) return;
-            if(action === 'delete') { currentGroup.value.replies = currentGroup.value.replies.filter(r => !selectedLibIds.value.includes(r.id)); selectedLibIds.value = []; batchSelectMode.value = false; debouncedSave(); } 
-            else if (action === 'toggle') { currentGroup.value.replies.forEach(r => { if(selectedLibIds.value.includes(r.id)) r.enabled = !r.enabled; }); selectedLibIds.value = []; batchSelectMode.value = false; debouncedSave(); } 
-            else if (action === 'move') { const otherGroups = replyGroups.value.filter(g => g.id !== currentGroupId.value); if(otherGroups.length === 0) { showToast("无他卷可迁"); return; } const opts = otherGroups.map(g => ({ label: g.name, value: g.id })); showModal('select', '迁往何处', { placeholder: '择一卷...', options: opts, onConfirm: (targetId) => { if(!targetId) return; const targetGroup = replyGroups.value.find(g => g.id === targetId); const itemsToMove = currentGroup.value.replies.filter(r => selectedLibIds.value.includes(r.id)); currentGroup.value.replies = currentGroup.value.replies.filter(r => !selectedLibIds.value.includes(r.id)); targetGroup.replies.push(...itemsToMove); selectedLibIds.value = []; batchSelectMode.value = false; debouncedSave(); showToast("落定"); }}); }
+            if(action === 'delete') { currentGroup.value.replies = currentGroup.value.replies.filter(r => !selectedLibIds.value.includes(r.id)); selectedLibIds.value = []; batchSelectMode.value = false; debouncedSave(); }
+            else if (action === 'toggle') { currentGroup.value.replies.forEach(r => { if(selectedLibIds.value.includes(r.id)) r.enabled = !r.enabled; }); selectedLibIds.value = []; batchSelectMode.value = false; debouncedSave(); }
+            else if (action === 'move') { const otherGroups = replyGroups.value.filter(g => g.id !== currentGroupId.value); if(otherGroups.length === 0) { showToast("无疆可往"); return; } const opts = otherGroups.map(g => ({ label: g.name, value: g.id })); showModal('select', '去往何方', { placeholder: '空空如也...', options: opts, onConfirm: (targetId) => { if(!targetId) return; const targetGroup = replyGroups.value.find(g => g.id === targetId); const itemsToMove = currentGroup.value.replies.filter(r => selectedLibIds.value.includes(r.id)); currentGroup.value.replies = currentGroup.value.replies.filter(r => !selectedLibIds.value.includes(r.id)); targetGroup.replies.push(...itemsToMove); selectedLibIds.value = []; batchSelectMode.value = false; debouncedSave(); showToast("法度大成"); }}); }
         };
-        const deduplicateReplies = () => { if(!currentGroup.value) return; const set = new Set(); const arr = []; currentGroup.value.replies.forEach(r => { if(!set.has(r.text)) { set.add(r.text); arr.push(r); } }); const diff = currentGroup.value.replies.length - arr.length; currentGroup.value.replies = arr; debouncedSave(); showToast(diff > 0 ? `涤去 ${diff} 缕重影` : `清明无影`); };
+        const deduplicateReplies = () => { if(!currentGroup.value) return; const set = new Set(); const arr = []; currentGroup.value.replies.forEach(r => { if(!set.has(r.text)) { set.add(r.text); arr.push(r); } }); const diff = currentGroup.value.replies.length - arr.length; currentGroup.value.replies = arr; debouncedSave(); showToast(diff > 0 ? `荡涤 ${diff} 丝浮生` : `清越无瑕`); };
+
         watch(currentGroupId, () => { batchSelectMode.value = false; selectedLibIds.value=[]; libSearch.value=''; nextTick(initSortable); });
-        const initSortable = () => { if(sortableInst) sortableInst.destroy(); const el = document.querySelector('.reply-sortable-list'); if(!el) return; sortableInst = new Sortable(el, { animation: 200, handle: '.drag-handle', onEnd: (evt) => { if(!currentGroup.value) return; const item = currentGroup.value.replies.splice(evt.oldIndex, 1)[0]; currentGroup.value.replies.splice(evt.newIndex, 0, item); debouncedSave(); } }); };
+        const initSortable = () => { if(sortableInst) sortableInst.destroy(); const el = document.querySelector('.reply-sortable-list'); if(!el) return; sortableInst = new Sortable(el, { animation: 200, handle: '.drag-handle', fallbackOnBody: true, onEnd: (evt) => { if(!currentGroup.value) return; const item = currentGroup.value.replies.splice(evt.oldIndex, 1)[0]; currentGroup.value.replies.splice(evt.newIndex, 0, item); debouncedSave(); } }); };
 
         const handleExport = () => {
-            showModal('select', '拓印何物？', {
-                options: [{label:'拓印全卷 (含所有设置)', value:'all'}, {label:'仅拓印藏经卷宗', value:'lib'}],
+            showModal('select', '何以印刻？', {
+                options: [{label:'全息融贯', value:'all'}, {label:'经书秘典', value:'lib'}],
                 onConfirm: (val) => {
                     if(!val) return;
                     let expData = {};
-                    if(val === 'all') expData = { messages: messages.value, profiles, settings, replyGroups: replyGroups.value, anniversaries: anniversaries.value, periods: periods.value, chatState: { isGroupMode: chatState.isGroupMode, groupMembers: chatState.groupMembers }, playlist: playlist.value };
+                    if(val === 'all') expData = { messages: messages.value, profiles, settings, replyGroups: replyGroups.value, chatState: { isGroupMode: chatState.isGroupMode, groupMembers: chatState.groupMembers }, playlist: playlist.value };
                     else expData = { replyGroups: replyGroups.value };
-                    const blob = new Blob([JSON.stringify(expData)], {type: "application/json"}); 
-                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
-                    a.download = `留白_${val==='all'?'全卷':'卷宗'}_${Date.now()}.json`; a.click();
+                    const blob = new Blob([JSON.stringify(expData, null, 4)], {type: "application/json"});
+                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                    a.download = `天地卷宗_${val==='all'?'全象':'界脉'}_${Date.now()}.json`; a.click();
                 }
             });
         };
-        
+
         const handleImport = (e) => {
             const file = e.target.files[0]; if(!file) return;
             const reader = new FileReader();
             reader.onload = ev => {
                 try {
                     const data = JSON.parse(ev.target.result);
-                    showModal('select', '纳藏范围？', {
-                        options: [{label:'覆盖全卷 (危险)', value:'all'}, {label:'仅纳藏卷宗 (安全)', value:'lib'}],
+                    showModal('select', '重铸灵源？', {
+                        options: [{label:'再造乾坤', value:'all'}, {label:'融灵汇海', value:'lib'}],
                         onConfirm: (val) => {
                             if(!val) return;
                             if(val === 'all') {
@@ -950,164 +978,147 @@ createApp({
                                 if(data.profiles) Object.assign(profiles, data.profiles);
                                 if(data.settings) Object.assign(settings, { ...settings, ...data.settings });
                                 if(data.replyGroups) replyGroups.value = data.replyGroups;
-                                if(data.anniversaries) anniversaries.value = data.anniversaries;
-                                if(data.periods) periods.value = data.periods;
                                 if(data.chatState) { chatState.isGroupMode = data.chatState.isGroupMode||false; chatState.groupMembers = data.chatState.groupMembers||[]; }
                                 if(data.playlist) playlist.value = data.playlist;
-                            } else {
-                                if(data.replyGroups) replyGroups.value = data.replyGroups;
-                            }
-                            debouncedSave(); showToast('纳藏完毕');
+                            } else { if(data.replyGroups) replyGroups.value = data.replyGroups; }
+                            debouncedSave(); showToast('浩渺神恩，大梦初醒');
                         }
                     });
-                } catch(err) { showToast('文书残破'); }
-            }; 
+                } catch(err) { showToast('玉简尽碎，难以参悟'); }
+            };
             reader.readAsText(file); e.target.value = '';
         };
 
-        const clearData = () => showModal('confirm', '付之一炬', { message: '虚妄皆空，确认烧去所有立卷？', onConfirm: () => { messages.value = []; debouncedSave(); switchView('home'); }});
-
-        const sortedAnniversaries = computed(() => [...anniversaries.value].sort((a,b) => new Date(a.date||0) - new Date(b.date||0)));
-        const addAnniversary = () => { const d = new Date(); const ds = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; anniversaries.value.unshift({ id: genId(), date: ds, name: '' }); };
-        const removeAnniversary = (id) => anniversaries.value = anniversaries.value.filter(a => a.id !== id);
-        const getAnniDays = (dateStr) => { if(!dateStr) return 0; const t = new Date(dateStr); t.setHours(0,0,0,0); const n = new Date(); n.setHours(0,0,0,0); return Math.ceil((t - n) / 86400000); };
-
-        const sortedPeriods = computed(() => [...periods.value].sort((a,b) => new Date(b.date) - new Date(a.date)));
-        const addPeriodHistory = () => { const d = new Date(); const ds = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; periods.value.unshift({ id: genId(), date: ds }); debouncedSave(); };
-        const removePeriod = (id) => { periods.value = periods.value.filter(p=>p.id!==id); debouncedSave(); };
-        const getPeriodGap = (d1, d2) => Math.abs(Math.floor((new Date(d1) - new Date(d2)) / 86400000));
-        const periodDaysSince = computed(() => { if(periods.value.length === 0) return '-'; const last = Math.max(...periods.value.map(p => new Date(p.date).getTime())); const n = new Date(); n.setHours(0,0,0,0); return Math.floor((n - last) / 86400000); });
-        const periodAvgDays = computed(() => { if(periods.value.length < 2) return '-'; const sorted = [...periods.value].map(p=>new Date(p.date).getTime()).sort((a,b)=>a-b); let total = 0; for(let i=1; i<sorted.length; i++) total += (sorted[i] - sorted[i-1]); return Math.floor(total / (sorted.length-1) / 86400000); });
+        const clearData = () => showModal('confirm', '红莲业火', { message: '业火将焚尽天地，点滴因果皆归虚无，可执念仍存？', onConfirm: () => { messages.value = []; replyGroups.value = [{ id: genId(), name: '无痕录', replies: []}]; debouncedSave(); switchView('home'); }});
 
         const statData = computed(() => {
-            const d = messages.value.length ? new Date(messages.value[0].timestamp) : new Date(); 
             let totalChars = 0; let latestMs = 0; let lastTime = 0; let longestGap = 0;
-            messages.value.forEach((m, idx) => { 
-                totalChars += m.content.length; 
-                const dt = new Date(m.timestamp); 
-                const h = dt.getHours(); 
-                if(h >= 0 && h <= 5) { const timeInMs = h*3600000 + dt.getMinutes()*60000; if(timeInMs > latestMs) latestMs = timeInMs; } 
+            const genesisData = messages.value.length ? messages.value[0].timestamp : Date.now();
+            messages.value.forEach((m, idx) => {
+                totalChars += m.content.length;
+                const dt = new Date(m.timestamp);
+                const h = dt.getHours();
+                if(h >= 0 && h <= 5) { const timeInMs = h*3600000 + dt.getMinutes()*60000; if(timeInMs > latestMs) latestMs = timeInMs; }
                 if(idx > 0) { const gap = m.timestamp - lastTime; if(gap > longestGap) longestGap = gap; }
                 lastTime = m.timestamp;
             });
-            const daysKnown = Math.max(1, Math.ceil((new Date() - d) / 86400000));
-            const avgPerDay = (messages.value.length / daysKnown).toFixed(1);
+            const daysKnownRefined = Math.max(0, Math.ceil((Date.now() - genesisData) / 86400000));
             const formatHour = (ms) => { if(ms === 0) return '--:--'; let h = Math.floor(ms/3600000); let m = Math.floor((ms%3600000)/60000); return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; };
             const getTopWords = (senderType) => { const map = {}; messages.value.forEach(m => { const isThem = m.sender !== 'me'; if((senderType === 'me' && m.sender === 'me') || (senderType === 'them' && isThem)) { const chunks = m.content.split(/[ ，。！？\n~]+/).filter(x=>x.length>1); if(chunks.length===0 && m.content.length>0) chunks.push(m.content); chunks.forEach(c => map[c] = (map[c]||0)+1); } }); return Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0, 5).map(x => ({w: x[0], c: x[1]})); };
-            return { 
-                firstTime: `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')}`, 
-                daysKnown, totalChars, avgPerDay,
-                latestNightHour: formatHour(latestMs), 
-                longestGap: Math.floor(longestGap/86400000),
-                topWordsMe: getTopWords('me'), 
-                topWordsThem: getTopWords('them') 
-            }
+            return { daysKnownRefined, totalChars, latestNightHour: formatHour(latestMs), longestGap: Math.floor(longestGap/86400000), topWordsMe: getTopWords('me'), topWordsThem: getTopWords('them') }
         });
 
-        // 音乐匣核心
         const setupAudio = () => {
             if(!audio.value) {
                 audio.value = new Audio();
+                audio.value.addEventListener('play', () => isPlaying.value = true);
+                audio.value.addEventListener('pause', () => isPlaying.value = false);
                 audio.value.addEventListener('ended', handleSongEnd);
-                audio.value.addEventListener('error', () => { showToast("此曲佚失"); nextSong(); });
+                audio.value.addEventListener('error', () => { if(audio.value.src) showToast("此界音脉残缺"); nextSong(); });
             }
         };
-        const playSong = (index) => {
-            if (playlist.value.length === 0) return;
-            musicState.currentIndex = index;
-            const song = playlist.value[index];
-            if(!audio.value) setupAudio();
-            audio.value.src = song.url;
-            audio.value.play().catch(e=>console.log(e));
-        };
-        const togglePlay = () => {
-            if(playlist.value.length === 0) return;
-            if(!audio.value || !audio.value.src) playSong(musicState.currentIndex);
-            else if(audio.value.paused) audio.value.play();
-            else audio.value.pause();
-        };
-        const nextSong = () => {
-            if(playlist.value.length === 0) return;
-            let nextIdx = musicState.currentIndex + 1;
-            if(musicState.mode === 1) nextIdx = Math.floor(Math.random() * playlist.value.length);
-            else if(nextIdx >= playlist.value.length) nextIdx = 0;
-            playSong(nextIdx);
-        };
-        const prevSong = () => {
-            if(playlist.value.length === 0) return;
-            let prevIdx = musicState.currentIndex - 1;
-            if(musicState.mode === 1) prevIdx = Math.floor(Math.random() * playlist.value.length);
-            else if(prevIdx < 0) prevIdx = playlist.value.length - 1;
-            playSong(prevIdx);
-        };
-        const handleSongEnd = () => {
-            if(musicState.mode === 2) { audio.value.currentTime = 0; audio.value.play(); }
-            else nextSong();
-        };
-        const togglePlayMode = () => { musicState.mode = (musicState.mode + 1) % 3; showToast(["循序", "随心", "单曲"][musicState.mode]); };
-        
-        const addSong = () => showModal('song', '添置新曲', { onConfirm: (data) => { if(data.title && data.url) { playlist.value.unshift(data); debouncedSave(); showToast("入匣"); } } });
-        const editSong = (idx) => showModal('song', '重撰曲目', { songData: playlist.value[idx], onConfirm: (data) => { playlist.value[idx] = data; debouncedSave(); } });
-        const removeSong = (idx) => { playlist.value.splice(idx, 1); debouncedSave(); if(musicState.currentIndex === idx) { audio.value.pause(); audio.value.src=''; } };
+        const playSong = (index) => { if (playlist.value.length === 0) return; musicState.currentIndex = index; const song = playlist.value[index]; if(!audio.value) setupAudio(); audio.value.src = song.url; audio.value.play().catch(e=>{}); };
+        const togglePlay = () => { if(playlist.value.length === 0) return; if(!audio.value || !audio.value.src) playSong(musicState.currentIndex); else if(audio.value.paused) audio.value.play(); else audio.value.pause(); };
+        const nextSong = () => { if(playlist.value.length === 0) return; let nextIdx = musicState.currentIndex + 1; if(musicState.mode === 1) nextIdx = Math.floor(Math.random() * playlist.value.length); else if(nextIdx >= playlist.value.length) nextIdx = 0; playSong(nextIdx); };
+        const prevSong = () => { if(playlist.value.length === 0) return; let prevIdx = musicState.currentIndex - 1; if(musicState.mode === 1) prevIdx = Math.floor(Math.random() * playlist.value.length); else if(prevIdx < 0) prevIdx = playlist.value.length - 1; playSong(prevIdx); };
+        const handleSongEnd = () => { if(musicState.mode === 2) { audio.value.currentTime = 0; audio.value.play(); } else nextSong(); };
+        const togglePlayMode = () => { musicState.mode = (musicState.mode + 1) % 3; showToast(["因果相随", "聚散流转", "万世一念"][musicState.mode]); };
 
-        // 悬浮拖拽 vs 点击 区分逻辑重构
+        const addSong = () => showModal('song', '采风拾音', { onConfirm: (data) => { if(data.title && data.url) { playlist.value.unshift(data); debouncedSave(); showToast("大音希声，入匣"); } } });
+        const batchAddSongs = () => showModal('batchAddMusic', '神音降世', {
+    onConfirm: (val) => {
+        if(!val) return;
+        const lines = val.split('\n').map(l=>l.trim()).filter(Boolean);
+        let added = 0;
+        lines.forEach(line => {
+            const parts = line.split('|');
+            if(parts.length >= 3) {
+                playlist.value.unshift({ title: parts[0].trim(), sub: parts[1].trim(), url: parts[2].trim(), isCustom: true });
+                added++;
+            }
+        });
+        if(added > 0) {
+            debouncedSave();
+            showToast(`已将 ${added} 首神音引入本源`);
+        } else {
+            showToast("格式未对齐，音核拒收");
+        }
+    }
+});
+
+        const editSong = (idx) => showModal('song', '洗练音源', { songData: playlist.value[idx], onConfirm: (data) => { playlist.value[idx] = data; debouncedSave(); } });
+        const removeSong = (idx) => { playlist.value.splice(idx, 1); debouncedSave(); if(musicState.currentIndex === idx) { if(audio.value){ audio.value.pause(); audio.value.src='';} } };
+
         const startDrag = (e) => {
             if(!musicState.minimized) return;
-            dragInfo.isDragging = true;
-            dragInfo.startTime = Date.now();
-            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-            dragInfo.startX = clientX; dragInfo.startY = clientY;
-            dragInfo.initialX = musicState.x; dragInfo.initialY = musicState.y;
-            document.addEventListener('mousemove', onDrag);
-            document.addEventListener('touchmove', onDrag, {passive: false});
-            document.addEventListener('mouseup', stopDrag);
-            document.addEventListener('touchend', stopDrag);
+            const target = e.target;
+            if(target.closest('button')) return;
+
+            isDraggingMusic = false; 
+            mdStartTime = Date.now();
+            const touch = e.type.includes('mouse') ? e : e.touches[0];
+            mdStartX = touch.clientX;
+            mdStartY = touch.clientY;
+            mdInitX = musicState.x;
+            mdInitY = musicState.y;
+
+            const isMouse = e.type.includes('mouse');
+            document.addEventListener(isMouse ? 'mousemove' : 'touchmove', onDrag, { passive: false });
+            document.addEventListener(isMouse ? 'mouseup' : 'touchend', stopDrag);
         };
         const onDrag = (e) => {
-            if(!dragInfo.isDragging) return;
-            e.preventDefault();
-            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-            const dx = clientX - dragInfo.startX; const dy = clientY - dragInfo.startY;
-            let nx = dragInfo.initialX + dx; let ny = dragInfo.initialY + dy;
-            const mw = window.innerWidth - 48; const mh = window.innerHeight - 48;
-            if(nx < 24) nx = 24; if(ny < 24) ny = 24; if(nx > mw) nx = mw; if(ny > mh) ny = mh;
-            musicState.x = nx; musicState.y = ny;
+            const touch = e.type.includes('mouse') ? e : e.touches[0];
+            const dx = touch.clientX - mdStartX;
+            const dy = touch.clientY - mdStartY;
+
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                isDraggingMusic = true;
+            }
+
+            if(!isDraggingMusic) return;
+            e.preventDefault(); 
+
+            let nx = mdInitX + dx;
+            let ny = mdInitY + dy;
+            const w = window.innerWidth; const h = window.innerHeight;
+            if(nx < 24) nx = 24; if(ny < 24) ny = 24; if(nx > w - 24) nx = w - 24; if(ny > h - 24) ny = h - 24;
+
+            musicState.x = nx;
+            musicState.y = ny;
         };
         const stopDrag = (e) => {
-            dragInfo.isDragging = false;
-            document.removeEventListener('mousemove', onDrag); document.removeEventListener('touchmove', onDrag);
-            document.removeEventListener('mouseup', stopDrag); document.removeEventListener('touchend', stopDrag);
-            
-            const clientX = e.type.includes('mouse') ? e.clientX : (e.changedTouches ? e.changedTouches[0].clientX : dragInfo.startX);
-            const clientY = e.type.includes('mouse') ? e.clientY : (e.changedTouches ? e.changedTouches[0].clientY : dragInfo.startY);
-            const dx = clientX - dragInfo.startX; const dy = clientY - dragInfo.startY;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            const timeLapsed = Date.now() - dragInfo.startTime;
-            
-            // 如果移动距离极短且时间极快，判定为点击
-            if(dist < 10 && timeLapsed < 300) {
+            const isMouse = e.type.includes('mouse') || e.type === 'mouseup';
+            document.removeEventListener(isMouse ? 'mousemove' : 'touchmove', onDrag);
+            document.removeEventListener(isMouse ? 'mouseup' : 'touchend', stopDrag);
+
+            const timeLapsed = Date.now() - mdStartTime;
+
+            if(!isDraggingMusic && timeLapsed < 350) {
                 musicState.minimized = false;
             }
+            isDraggingMusic = false;
+            debouncedSave();
         };
 
-        const switchView = (v) => { currentView.value = v; };
+        const switchView = (v) => {
+            currentView.value = v;
+            nextTick(() => { if(window.lucide) lucide.createIcons(); });
+        };
+
 
         onMounted(() => { initData(); setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 500); document.addEventListener('click', () => { if(settings.soundEnabled && !audioCtx) initAudio(); }, {once:true}); });
 
         return {
-            appState, currentView, homeMenus, unreadCount, toast, messages, inputText, isTyping, profiles, settings, 
-            timelineTab, anniversaries, sortedAnniversaries, periods, sortedPeriods, periodDaysSince, periodAvgDays, getAnniDays, getPeriodGap, addAnniversary, removeAnniversary, addPeriodHistory, removePeriod,
+            appState, currentView, homeMenus, unreadCount, toast, messages, inputText, isTyping, profiles, settings,
             replyGroups, currentGroupId, currentGroup, chatState, showGroupDrawer, statData, modal, customStyleVars,
-            libSearch, batchSelectMode, selectedLibIds, filteredReplies,
-            switchView, handleSend, forceReply, deleteMsg, editProfile, saveDraft, highlightText, toggleSearch, executeSearch, jumpSearch, removeCustomBg,
+            libSearch, batchSelectMode, selectedLibIds, filteredReplies, switchView, handleSend, forceReply, deleteMsg, editProfile, saveDraft, executeSearch, jumpSearch, removeCustomBg,
             addGroup, deleteGroup, addReplyToCurrent, batchAddReplies, batchAction, deduplicateReplies, handleExport, handleImport, clearData, debouncedSave, showModal, closeModal, confirmModal, handleImgUpload, reqNotification,
-            openGroupManager, addGroupMember, removeGroupMember, editGroupMember, getSenderProfile,
-            audio, playlist, showPlaylist, musicState, currentSong, playSong, togglePlay, nextSong, prevSong, togglePlayMode, addSong, editSong, removeSong, startDrag
+            addGroupMember, removeGroupMember, editGroupMember, getSenderProfile,
+            audio, playlist, showPlaylist, musicState, currentSong, playSong, togglePlay, nextSong, prevSong, togglePlayMode, addSong, batchAddSongs, editSong, removeSong, startDrag, onDrag, stopDrag, isPlaying
         };
     }
 }).mount('#app');
+
 </script>
 </body>
 </html>
