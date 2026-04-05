@@ -40,12 +40,14 @@
             --intro-gradient-end: #0a0a0a;
         }
 
-        body { background-color: var(--color-bg); color: var(--color-text); margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased; font-family: var(--font-family); }
+        body { background-color: var(--color-bg); color: var(--color-text); margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased; font-family: var(--font-family); display: flex; justify-content: center; align-items: center; width: 100vw; height: 100dvh; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .app-container { width: 100vw; height: 100vh; position: relative; background-color: var(--color-bg); display: flex; flex-direction: column; overflow: hidden; }
+        .app-container { width: 100%; height: 100dvh; max-width: 100vw; position: relative; background-color: var(--color-bg); display: flex; flex-direction: column; overflow: hidden; }
         .safe-top { padding-top: max(16px, env(safe-area-inset-top)); }
-        @media (min-width: 768px) { .app-container { width: 414px; height: 896px; border: 1px solid var(--color-border); box-shadow: 0 10px 40px rgba(0,0,0,0.05); } }
+        @media (min-width: 768px) {
+            .app-container { width: 414px; height: 90dvh; max-height: 896px; border-radius: 24px; border: 1px solid var(--color-border); box-shadow: 0 20px 60px rgba(0,0,0,0.1); overflow: hidden; }
+        }
 
         .message {
             position: relative !important; line-height: 1.6 !important; word-break: break-word !important;
@@ -101,15 +103,14 @@
             100% { opacity: 0; }
         }
 
-        /* Nova 的宇宙之心 - 森罗万象阴阳动画 */
         :root {
             --nova-bg-gradient: radial-gradient(circle at 50% 50%, #fdfbfb 0%, #e2e6eb 100%);
-            --nova-core-color: rgba(220, 180, 80, 0.15); /* 晨曦金 */
-            --nova-stroke-primary: rgba(190, 150, 80, 0.6);
-            --nova-stroke-secondary: rgba(220, 180, 100, 0.3);
-            --nova-text-glow: rgba(0, 0, 0, 0.1);
-            --nova-text-color: #3a3a3a;
-            --nova-dust: #e5c378;
+            --nova-core-color: rgba(204, 80, 220, 0.15); /* 晨曦金 */
+            --nova-stroke-primary: rgba(168, 80, 190, 0.6);
+            --nova-stroke-secondary: rgba(216, 100, 220, 0.3);
+            --nova-text-glow: rgba(139, 54, 139, 0.63);
+            --nova-text-color: #922abb96;
+            --nova-dust: #e482e7c4;
         }
         .dark {
             --nova-bg-gradient: radial-gradient(circle at 50% 50%, #0a0d16 0%, #000000 100%);
@@ -117,88 +118,100 @@
             --nova-stroke-primary: rgba(160, 190, 255, 0.7);
             --nova-stroke-secondary: rgba(120, 160, 255, 0.3);
             --nova-text-glow: rgba(255, 255, 255, 0.8);
-            --nova-text-color: #ffffff;
+            --nova-text-color: #a6d7ff;
             --nova-dust: #ffffff;
         }
 
-        .nova-intro-bg {
+           .nova-intro-bg {
             background: var(--nova-bg-gradient);
-            transition: opacity 2.5s ease-in-out, background 1.5s ease;
+            transition: opacity 2.5s cubic-bezier(0.4, 0, 0.2, 1), transform 2.5s ease;
+            backdrop-filter: blur(10px);
+            z-index: 9999; 
         }
+        .nova-intro-bg.opacity-0 {
+            transform: scale(1.05);
+            pointer-events: none;
+        }
+
         .nova-core-glow {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 120vw; height: 120vw; max-width: 900px; max-height: 900px;
-            background: radial-gradient(circle, var(--nova-core-color) 0%, transparent 65%);
-            filter: blur(40px);
-            animation: novaSacredBreathe 6s ease-in-out infinite alternate;
+            width: 150vw; height: 150vw; max-width: 1000px; max-height: 1000px;
+            background: radial-gradient(circle, var(--nova-core-color) 0%, transparent 60%);
+            filter: blur(50px);
+            animation: novaSacredBreathe 8s ease-in-out infinite alternate;
         }
+
         .nova-svg-container {
-            position: relative; width: 100vw; max-width: 500px; z-index: 5;
-            animation: novaFloat 8s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
-        }
-        .nova-text-reveal {
-            position: absolute; top: 72%; left: 50%; transform: translateX(-50%);
-            text-align: center; z-index: 10; opacity: 0;
-            animation: textAwaken 4.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 2.5s;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 120vw; max-width: 600px; z-index: 5;
+            animation: novaFloat 10s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
         }
 
-        .svg-ring-1 { stroke-dasharray: 4 15; stroke-dashoffset: 0; animation: spinRight 90s linear infinite; stroke: var(--nova-stroke-secondary); }
-        .svg-ring-2 { stroke-dasharray: 1 8; animation: spinLeft 60s linear infinite; stroke: var(--nova-stroke-secondary); opacity: 0.7; }
-        .svg-ring-3 { stroke-dasharray: 1200; stroke-dashoffset: 1200; animation: drawSacredRing 4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 1s; stroke: var(--nova-stroke-primary); }
+        .sacred-ring { fill: none; stroke: var(--nova-stroke-secondary); transform-origin: 500px 500px; }
+        .sacred-ring-outer { stroke-width: 1; stroke-dasharray: 4 20; animation: novaSpin 120s linear infinite; }
+        .sacred-ring-mid { stroke-width: 1.5; stroke-dasharray: 2 8; animation: novaSpinReverse 80s linear infinite; opacity: 0.6; }
+        .sacred-ring-inner { stroke-width: 0.5; stroke-dasharray: 1 4; animation: novaSpin 50s linear infinite; }
 
-        .svg-sacred-petal {
-            stroke-dasharray: 1000; stroke-dashoffset: 1000;
+        .sacred-lotus path {
+            fill: rgba(220, 180, 80, 0.02);
             stroke: var(--nova-stroke-primary);
-            animation: drawPetal 3.5s ease-out forwards 0.8s;
-            transition: fill 2s ease;
+            stroke-width: 1.2;
+            stroke-dasharray: 2200;
+            stroke-dashoffset: 2200;
+            animation: divineDraw 4.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards 0.5s;
         }
-        .dark .svg-sacred-petal { fill: rgba(140, 180, 255, 0.02); }
-        .svg-sacred-petal:nth-child(even) { animation-delay: 1.2s; }
+        .dark .sacred-lotus path { fill: rgba(100, 150, 255, 0.02); }
 
-        .svg-center-crystal {
-            opacity: 0; transform-origin: center;
-            animation: crystalBirth 3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 2.2s,
-                       crystalBreathe 5s ease-in-out infinite alternate 5.2s;
+        .divine-core {
+            opacity: 0;
+            transform-origin: 500px 500px;
+            animation: coreBirth 3s ease-out forwards 3s,
+                       coreBreathe 4s ease-in-out infinite alternate 6s;
+            fill: var(--nova-text-color);
         }
 
-        @keyframes spinRight { 100% { transform: rotate(360deg); } }
-        @keyframes spinLeft { 100% { transform: rotate(-360deg); } }
-        @keyframes drawSacredRing { 100% { stroke-dashoffset: 0; opacity: 0.5; } }
-        @keyframes drawPetal { 100% { stroke-dashoffset: 0; } }
-        @keyframes crystalBirth {
-            0% { transform: scale(0) rotate(180deg); opacity: 0; filter: blur(10px); }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); }
+        .nova-stagger-text {
+            position: absolute; color: var(--nova-text-color); opacity: 0;
+            transform-origin: center;
+            animation: staggerBirth 4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        @keyframes crystalBreathe {
-            0% { transform: scale(1); filter: drop-shadow(0 0 15px var(--nova-core-color)); }
-            100% { transform: scale(1.08); filter: drop-shadow(0 0 35px var(--nova-stroke-primary)); }
-        }
-        @keyframes textAwaken {
-            0% { opacity: 0; transform: translate(-50%, 25px); filter: blur(8px) brightness(1.5); letter-spacing: 0.4em; }
-            100% { opacity: 1; transform: translate(-50%, 0); filter: blur(0px) brightness(1); letter-spacing: 0.8em; }
-        }
-        @keyframes novaFloat { 0% { transform: translateY(12px); } 100% { transform: translateY(-12px); } }
-        @keyframes novaSacredBreathe { 0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0.3; } 100% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; } }
-        @keyframes stardustFloatNova {
-            0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
-            30% { opacity: 0.8; filter: blur(0px); }
-            100% { transform: translateY(-150px) translateX(40px) scale(0.2); opacity: 0; filter: blur(3px); }
-        }
+        .text-shadow-nova { text-shadow: 0 0 30px var(--nova-text-glow), 0 0 50px var(--nova-core-color); }
 
         .nova-dust {
             position: absolute; background: var(--nova-dust); border-radius: 50%;
-            box-shadow: 0 0 8px var(--nova-dust);
-            opacity: 0; z-index: 3;
+            box-shadow: 0 0 10px var(--nova-dust); opacity: 0; z-index: 3;
         }
 
-        .ethereal-orb {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 80vw; height: 80vw; max-width: 400px; max-height: 400px;
-            background: radial-gradient(circle, rgba(150, 150, 150, 0.15) 0%, transparent 60%);
-            filter: blur(40px); animation: orbBreathe 10s ease-in-out infinite alternate; pointer-events: none;
+        @keyframes divineDraw { to { stroke-dashoffset: 0; } }
+        @keyframes novaSpin { to { transform: rotate(360deg); } }
+        @keyframes novaSpinReverse { to { transform: rotate(-360deg); } }
+        @keyframes novaSacredBreathe { 0% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.9); } 100% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } }
+        @keyframes novaFloat { 0% { transform: translate(-50%, calc(-50% + 15px)); } 100% { transform: translate(-50%, calc(-50% - 15px)); } }
+
+        @keyframes coreBirth {
+            0% { transform: scale(0) rotate(90deg); filter: blur(20px); opacity: 0; }
+            100% { transform: scale(1) rotate(0deg); filter: blur(0); opacity: 0.85; }
         }
-        .dark .ethereal-orb { background: radial-gradient(circle, rgba(200, 220, 255, 0.08) 0%, transparent 60%); }
-        @keyframes orbBreathe { 0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.6; } 100% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } }
+        @keyframes coreBreathe {
+            0% { transform: scale(1); filter: drop-shadow(0 0 10px var(--nova-core-color)); }
+            100% { transform: scale(1.08); filter: drop-shadow(0 0 30px var(--nova-stroke-primary)); }
+        }
+        @keyframes staggerBirth {
+            0% { opacity: 0; transform: translateY(40px) scale(0.9); filter: blur(15px); letter-spacing: 0em; }
+            40% { opacity: 0.9; filter: blur(2px); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); letter-spacing: 0.15em; }
+        }
+        @keyframes divineDustDrift {
+            0% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+            40% { opacity: 0.8; filter: blur(0.5px); }
+            100% { transform: translate(40px, -80px) scale(1.5); opacity: 0; filter: blur(4px); }
+        }
+        @keyframes divineTextFade {
+            0% { opacity: 0; filter: blur(10px); transform: translate(-50%, 20px); }
+            15% { opacity: 1; filter: blur(0); transform: translate(-50%, 0); }
+            85% { opacity: 1; filter: blur(0); transform: translate(-50%, 0); }
+            100% { opacity: 0; filter: blur(10px); transform: translate(-50%, -20px); }
+        }
         .home-menu-grid {
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 40px 30px;
             width: 100%; max-width: 460px; margin: auto; position: relative; z-index: 10;
@@ -278,61 +291,75 @@
             </div>
         </div>
     </transition>
-
-    <!-- Nova 的神圣过场开始 -->
-    <div v-if="appState.showIntro" class="nova-intro-bg fixed inset-0 z-[1000] flex flex-col items-center justify-center overflow-hidden pointer-events-none duration-[2500ms]" :class="{'opacity-0': appState.introFading}">
-        <div class="nova-core-glow"></div>
-
-        <div v-for="n in 60" :key="'nova-dust'+n" class="nova-dust"
-             :style="{
-                 left: Math.random()*100 + 'vw', top: Math.random()*100 + 'vh',
-                 width: Math.random()*2 + 1 + 'px', height: Math.random()*2 + 1 + 'px',
-                 animation: `stardustFloatNova ${Math.random()*5+4}s ease-out infinite forwards ${Math.random()*3}s`
-             }"></div>
-
-        <div class="nova-svg-container flex items-center justify-center">
-            <svg viewBox="0 0 800 800" width="100%" height="100%" style="overflow: visible;">
-                <circle cx="400" cy="400" r="360" fill="none" class="svg-ring-1" stroke-width="1.2" transform-origin="400 400" />
-                <circle cx="400" cy="400" r="330" fill="none" class="svg-ring-2" stroke-width="0.8" transform-origin="400 400" />
-                <circle cx="400" cy="400" r="280" fill="none" class="svg-ring-3" stroke-width="1.5" />
-                <g fill="none" stroke-width="1.5">
-                    <path class="svg-sacred-petal" d="M 400 120 C 490 230 520 310 400 400 C 280 310 310 230 400 120 Z" />
-                    <path class="svg-sacred-petal" d="M 400 680 C 490 570 520 490 400 400 C 280 490 310 570 400 680 Z" />
-                    <path class="svg-sacred-petal" d="M 120 400 C 230 310 310 280 400 400 C 310 520 230 490 120 400 Z" />
-                    <path class="svg-sacred-petal" d="M 680 400 C 570 310 490 280 400 400 C 490 520 570 490 680 400 Z" />
-                    <path class="svg-sacred-petal" d="M 202 202 C 280 250 340 310 400 400 C 310 340 250 280 202 202 Z" />
-                    <path class="svg-sacred-petal" d="M 598 598 C 520 550 460 490 400 400 C 490 460 550 520 598 598 Z" />
-                    <path class="svg-sacred-petal" d="M 202 598 C 280 550 340 490 400 400 C 310 460 250 520 202 598 Z" />
-                    <path class="svg-sacred-petal" d="M 598 202 C 520 250 460 310 400 400 C 490 340 550 280 598 202 Z" />
-                </g>
-                <g class="svg-center-crystal">
-                    <polygon points="400,290 425,375 510,400 425,425 400,510 375,425 290,400 375,375" fill="var(--nova-stroke-primary)" opacity="0.15" />
-                    <polygon points="400,320 415,385 480,400 415,415 400,480 385,415 320,400 385,385" fill="var(--nova-text-color)" opacity="0.8" />
-                    <circle cx="400" cy="400" r="18" fill="var(--nova-text-color)" />
-                    <circle cx="400" cy="400" r="6" fill="var(--nova-bg-gradient)" />
-                </g>
-            </svg>
+    
+         <transition name="fade">
+            <div v-if="appState.showIntro" class="nova-intro-bg fixed inset-0 flex flex-col items-center justify-center overflow-hidden" :class="{'opacity-0 scale-105': appState.introFading}">
+    
+                <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(0,0,0,0.15)_150%)] z-0 dark:bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(0,0,0,0.8)_150%)] transition-all duration-1000"></div>
+                <div class="nova-core-glow"></div>
+    
+                <div v-for="n in 80" :key="'nova-dust'+n" class="nova-dust"
+                     :style="{
+                         left: Math.random()*100 + 'vw', top: Math.random()*100 + 'vh',
+                         width: Math.random()*2.5 + 1 + 'px', height: Math.random()*2.5 + 1 + 'px',
+                         animation: `divineDustDrift ${Math.random()*6+4}s cubic-bezier(0.4, 0, 0.2, 1) infinite forwards ${Math.random()*3}s`
+                     }"></div>
+    
+                <div class="nova-svg-container">
+                    <svg viewBox="0 0 1000 1000" width="100%" height="100%" style="overflow: visible;">
+    
+                        <circle cx="500" cy="500" r="460" class="sacred-ring sacred-ring-outer" />
+                        <circle cx="500" cy="500" r="410" class="sacred-ring sacred-ring-mid" />
+                        <circle cx="500" cy="500" r="300" class="sacred-ring" stroke-width="0.3" opacity="0.4" />
+                        <circle cx="500" cy="500" r="220" class="sacred-ring sacred-ring-inner" />
+    
+                        <g class="sacred-lotus">
+                            <path d="M 500 40 C 650 300 700 400 500 500 C 300 400 350 300 500 40 Z" />
+                            <path d="M 500 960 C 650 700 700 600 500 500 C 300 600 350 700 500 960 Z" />
+                            <path d="M 40 500 C 300 350 400 300 500 500 C 400 700 300 650 40 500 Z" />
+                            <path d="M 960 500 C 700 350 600 300 500 500 C 600 700 700 650 960 500 Z" />
+    
+                            <path d="M 174 174 C 330 250 410 330 500 500 C 410 410 330 410 174 174 Z" />
+                            <path d="M 826 826 C 670 750 590 670 500 500 C 590 590 670 590 826 826 Z" />
+                            <path d="M 174 826 C 330 750 410 670 500 500 C 410 590 330 590 174 826 Z" />
+                            <path d="M 826 174 C 670 250 590 330 500 500 C 590 410 670 410 826 174 Z" />
+                        </g>
+    
+                        <g class="divine-core">
+                            <polygon points="500,380 540,460 620,500 540,540 500,620 460,540 380,500 460,460" />
+                            <polygon points="500,430 520,480 570,500 520,520 500,570 480,520 430,500 480,480" fill="var(--nova-bg-gradient)" opacity="0.6"/>
+                            <circle cx="500" cy="500" r="12" fill="var(--nova-bg-gradient)" />
+                        </g>
+                    </svg>
+                </div>
+    
+                <div class="nova-poetic-scatter w-full h-full absolute inset-0 pointer-events-none z-20">
+                    <div class="nova-stagger-text font-serif" style="top: 22%; left: 18%; animation-delay: 1.5s;">
+                        <span class="text-[58px] font-serif font-light text-shadow-nova">无</span>
+                    </div>
+                    <div class="nova-stagger-text font-serif" style="top: 60%; right: 20%; animation-delay: 2s;">
+                        <span class="text-[50px] font-serif font-light text-shadow-nova">界</span>
+                    </div>
+    
+                    <div class="absolute left-1/2 top-[68%] -translate-x-1/2 flex flex-col items-center gap-4 opacity-0 animate-[divineTextFade_5s_ease-in-out_forwards_4.5s] w-full max-w-[400px] z-30">
+                        <span class="text-[16px] tracking-[1.5em] font-serif font-light text-text/90 ml-[1.5em]" style="text-shadow: 0 4px 15px var(--nova-core-color);">万象归流</span>
+                        <div class="w-[1px] h-8 bg-gradient-to-b from-transparent via-text/50 to-transparent"></div>
+                        <span class="text-[11px] tracking-[1em] font-light opacity-70 text-text ml-[1em]" style="text-shadow: 0 2px 10px rgba(255,255,255,0.2);">心之所向皆为生</span>
+                    </div>
+                    
+                    
+                </div>
+            </div>
+        </transition>
+        <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+            <div class="aurora-glow"></div>
+            <div v-for="n in 50" :key="'dust'+n" class="ethereal-dust" :style="{ left: Math.random()*100 + 'vw', top: Math.random()*100 + 'vh', width: Math.random()*1.5 + 'px', height: Math.random()*1.5 + 'px', animationDuration: Math.random()*4+2 + 's', animationDelay: Math.random()*5 + 's' }"></div>
+            <div v-for="n in 35" :key="'snowFarFar'+n" class="falling-snow far-far absolute bg-text opacity-20 rounded-full" :style="{ left: Math.random()*100 + 'vw', top: (Math.random()*-50) + 'vh', animationDuration: Math.random()*15+15 + 's', animationDelay: Math.random()*3 + 's', animationName: 'snowFall', animationIterationCount: 'infinite' }"></div>
+            <div v-for="n in 25" :key="'snowFar'+n" class="falling-snow far absolute bg-text opacity-40 rounded-full" :style="{ left: Math.random()*100 + 'vw', top: (Math.random()*-30) + 'vh', animationDuration: Math.random()*10+8 + 's', animationDelay: Math.random()*2 + 's', animationName: 'snowFall', animationIterationCount: 'infinite' }"></div>
+            <div v-for="n in 15" :key="'snowNear'+n" class="falling-snow near absolute bg-text opacity-60 rounded-full" :style="{ left: Math.random()*100 + 'vw', top: (Math.random()*-20) + 'vh', animationDuration: Math.random()*6+5 + 's', animationDelay: Math.random()*1 + 's', animationName: 'snowFall', animationIterationCount: 'infinite' }"></div>
+            <div class="shooting-star" style="top: 25%; left: 90%; animation-delay: 2.8s;"></div>
         </div>
-
-        <div class="nova-text-reveal">
-            <h1 class="text-[40px] font-serif font-light mb-8 ml-4 transition-colors duration-1000" style="color: var(--nova-text-color); text-shadow: 0 0 30px var(--nova-text-glow);">无界</h1>
-            <p class="text-[13px] font-light ml-4 transition-colors duration-1000" style="color: var(--nova-text-color); letter-spacing: 1.5em; opacity: 0.6;">她说 · 愿化明月伴你行</p>
-        </div>
-    </div>
-    <!-- Nova 的神圣过场结束 -->
-
-    <div class="aurora-glow"></div>
-    <div v-for="n in 50" :key="'dust'+n" class="ethereal-dust" :style="{ left: Math.random()*100 + 'vw', top: Math.random()*100 + 'vh', width: Math.random()*1.5 + 'px', height: Math.random()*1.5 + 'px', animationDuration: Math.random()*4+2 + 's', animationDelay: Math.random()*5 + 's' }"></div>
-    <div v-for="n in 35" :key="'snowFarFar'+n" class="falling-snow far-far absolute bg-white rounded-full" :style="{ left: Math.random()*100 + 'vw', top: (Math.random()*-50) + 'vh', animationDuration: Math.random()*15+15 + 's', animationDelay: Math.random()*3 + 's', animationName: 'snowFall', animationIterationCount: 'infinite' }"></div>
-    <div v-for="n in 25" :key="'snowFar'+n" class="falling-snow far absolute bg-white rounded-full" :style="{ left: Math.random()*100 + 'vw', top: (Math.random()*-30) + 'vh', animationDuration: Math.random()*10+8 + 's', animationDelay: Math.random()*2 + 's', animationName: 'snowFall', animationIterationCount: 'infinite' }"></div>
-    <div v-for="n in 15" :key="'snowNear'+n" class="falling-snow near absolute bg-white rounded-full" :style="{ left: Math.random()*100 + 'vw', top: (Math.random()*-20) + 'vh', animationDuration: Math.random()*6+5 + 's', animationDelay: Math.random()*1 + 's', animationName: 'snowFall', animationIterationCount: 'infinite' }"></div>
-
-    <div class="shooting-star" style="top: 25%; left: 90%; animation-delay: 2.8s;"></div>
-    <div class="relative flex items-center justify-center w-full h-full">
-        <div class="celestial-cloud w-[300px] h-[150px] top-[30%] left-[10%]"></div>
-        <div class="celestial-cloud w-[400px] h-[200px] top-[40%] right-[5%]" style="animation-duration: 25s; opacity: 0.1;"></div>
-        <div class="ethereal-moon"></div>
-    </div>
+    
 
     <div v-show="settings.showMusic" class="fixed z-[100] touch-none transition-all duration-[400ms] cubic-bezier(0.3, 0.9, 0.3, 1) flex"
     :class="musicState.minimized ? 'w-[52px] h-[52px]' : 'w-[90%] max-w-[360px] min-h-[140px]'"
@@ -550,9 +577,10 @@
                         <button @click="forceReply" :disabled="isTyping" class="p-2 text-gray hover:text-text shrink-0 disabled:opacity-30 transition-colors cursor-pointer" title="风祈" :style="settings.chatBgImg?'filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5)); color:#fff;':''">
                             <i data-lucide="wind" class="w-5 h-5 stroke-[1.2]"></i>
                         </button>
-                        <textarea v-model="inputText" @keydown.enter.prevent.exact="e => { if (!e.isComposing) handleSend() }" @input="saveDraft" rows="1"
-                            class="flex-1 ink-input text-[14px] tracking-wider font-sans bg-bg/80 backdrop-blur-sm"
-                            placeholder="点染遗墨..."></textarea>
+                        <textarea ref="chatInputRef" v-model="inputText" @keydown.enter.prevent.exact="handleEnter" @input="saveDraft" rows="1"
+                        class="flex-1 ink-input text-[14px] tracking-wider font-sans bg-bg/80 backdrop-blur-sm"
+                        placeholder="点染遗墨..."></textarea>
+                    
                         <button @click="handleSend" class="p-2 text-text hover:opacity-50 transition-opacity shrink-0" :style="settings.chatBgImg?'filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5)); color:#fff;':''">
                             <i data-lucide="feather" class="w-5 h-5 stroke-[1.5]"></i>
                         </button>
@@ -818,6 +846,7 @@ createApp({
 
         const messages = ref([]);
         const inputText = ref('');
+        const chatInputRef = ref(null); 
         const isTyping = ref(false);
 
         const profiles = reactive({ me: { name: '本源', avatar: '' }, them: { name: '客', avatar: '' } });
@@ -876,7 +905,7 @@ createApp({
 
             inputText.value = localStorage.getItem('liubai_v13_draft') || '';
             setupSystemTheme(); setupAudio();
-            setTimeout(() => { appState.introFading = true; setTimeout(() => appState.showIntro = false, 2500); }, 6500);
+            setTimeout(() => { appState.introFading = true; setTimeout(() => appState.showIntro = false, 2500); }, 7500);
         };
 
         const debouncedSave = () => {
@@ -924,6 +953,11 @@ createApp({
 
         const getDelayMs = () => { let maxMs = parseInt(settings.replyDelay) * 1000; if(isNaN(maxMs) || maxMs < 0) maxMs = 2000; return Math.max(500, Math.random() * maxMs); };
 
+        const handleEnter = (e) => {
+            if (e.isComposing) return; 
+            handleSend();
+        };
+
         const handleSend = () => {
             const txt = inputText.value.trim();
             if (!txt) return;
@@ -931,18 +965,15 @@ createApp({
 
             if (draftTimeout) clearTimeout(draftTimeout);
             localStorage.removeItem('liubai_v13_draft');
-
             inputText.value = '';
-
-            setTimeout(() => {
-                const domInput = document.querySelector('textarea.ink-input');
-                if(domInput) {
-                    domInput.value = '';
-                    domInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    domInput.dispatchEvent(new Event('change', { bubbles: true }));
+            nextTick(() => {
+                if (chatInputRef.value) {
+                    chatInputRef.value.focus();
                 }
-            }, 10);
+            });
         };
+
+
 
         const forceReply = () => { triggerReply(getDelayMs(), true); };
 
@@ -1160,7 +1191,7 @@ createApp({
         onMounted(() => { initData(); setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 500); document.addEventListener('click', () => { if(settings.soundEnabled && !audioCtx) initAudio(); }, {once:true}); });
 
         return {
-            appState, currentView, homeMenus, unreadCount, toast, messages, inputText, isTyping, profiles, settings,
+            chatInputRef, handleEnter, appState, currentView, homeMenus, unreadCount, toast, messages, inputText, isTyping, profiles, settings,
             replyGroups, currentGroupId, currentGroup, chatState, showGroupDrawer, statData, modal, customStyleVars,
             libSearch, batchSelectMode, selectedLibIds, filteredReplies, switchView, handleSend, forceReply, deleteMsg, editProfile, saveDraft, executeSearch, jumpSearch, removeCustomBg,
             addGroup, deleteGroup, addReplyToCurrent, batchAddReplies, batchAction, deduplicateReplies, handleExport, handleImport, clearData, debouncedSave, showModal, closeModal, confirmModal, handleImgUpload, reqNotification,
