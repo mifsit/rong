@@ -47,12 +47,17 @@
 		}
 		
 		.message {
-		    position: relative !important; line-height: 1.6 !important; word-break: break-word !important;
-		    overflow: visible !important; width: fit-content !important; max-width: 270px !important;
-		    border-radius: 2px !important;
-		    padding: 6px 10px; border: none; font-size: 0.95em;
-		    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-		}
+    position: relative !important; 
+    line-height: 1.6 !important; 
+    word-break: break-all !important; 
+    width: fit-content !important; 
+    min-width: 40px !important;
+    max-width: 85% !important;
+    border-radius: 2px !important;
+    padding: 8px 12px !important;
+    font-size: 0.95em;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
 		
 		.message.message-sent, .message.message-received {
 		    display: inline-block; position: relative; width: auto; min-width: 10%; color: #111;
@@ -338,16 +343,35 @@
         height: 22px !important;
     }
 }
-/* 修复首页菜单点击被拦截的问题 */
 .group.flex.flex-col.items-center.gap-3.cursor-pointer {
     pointer-events: auto !important;
+}
+.nova-svg-container {
+    animation: novaFloat 10s ease-in-out infinite alternate, novaEntry 3s ease-out forwards;
+}
+
+@keyframes novaEntry {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); filter: blur(20px); }
+    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+}
+
+.nova-intro-bg {
+    background: linear-gradient(135deg, var(--color-bg) 0%, #fff 50%, var(--color-bg) 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 6s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 	</style>
 	<style id="custom-font-injection"></style>
 	<style id="dynamic-bubble-style"></style>
 </head>
 <body class="flex justify-center items-center h-screen w-screen transition-colors duration-500 select-none text-[14px]">
-	<div id="app" v-cloak :class="{'dark': settings.darkMode}" :style="customStyleVars">
+	<div id="app" v-cloak class="w-full h-full" :class="{'dark': settings.darkMode}" :style="customStyleVars">
 		<transition name="toast-fade">
 			<div v-if="toast.show" class="fixed inset-0 z-[9999] flex items-start justify-center pt-[20vh] pointer-events-none">
 				<div class="px-6 py-4 bg-bg flex items-center gap-4 shadow-2xl rounded-sm pointer-events-auto max-w-[80vw]">
@@ -648,14 +672,18 @@
 							<div v-if="currentGroup" class="shrink-0 px-6 py-4 flex justify-between items-end gap-4 relative z-10">
 								<input v-model="currentGroup.name" @blur="debouncedSave" class="text-[16px] font-light tracking-[0.3em] bg-transparent border-none flex-1 text-text placeholder:text-gray/30 outline-none" placeholder="卷名...">
 							</div>
-							<div class="flex-1 overflow-y-auto px-6 pb-28 reply-sortable-list space-y-5 hide-scrollbar">
+							<div class="flex-1 overflow-y-auto px-3 pb-28 reply-sortable-list space-y-5 hide-scrollbar">
 								<div v-if="currentGroup && filteredReplies.length === 0" class="text-[12px] text-gray text-center mt-24 tracking-[0.6em] font-light">虚空无寄</div>
 								<div v-for="reply in filteredReplies" :key="reply.id" :data-id="reply.id" class="flex items-start gap-4 group transition-opacity" :class="{'opacity-50': !reply.enabled}">
 									<div v-if="batchSelectMode" class="mt-1.5 shrink-0"><input type="checkbox" :value="reply.id" v-model="selectedLibIds" class="mag-checkbox"></div>
-									<i v-else data-lucide="grip-vertical" class="w-4 h-4 text-border mt-1.5 cursor-grab active:cursor-grabbing drag-handle hover:text-gray transition-colors shrink-0 stroke-[1.5]"></i>
-									<textarea v-model="reply.text" @blur="debouncedSave" rows="1"
-										class="flex-1 text-[13px] tracking-wider bg-transparent border-b border-transparent group-hover:border-border/30 focus:border-text/50 resize-none min-h-[30px] transition-colors py-1 outline-none text-text"
-										:class="{'line-through text-gray': !reply.enabled}"></textarea>
+									<i v-else-if="!libSearch" data-lucide="grip-vertical" class="w-4 h-4 text-border mt-1.5 cursor-grab active:cursor-grabbing drag-handle hover:text-gray transition-colors shrink-0 stroke-[1.5]"></i>										
+									<!-- 修复粘连的类名 -->
+<textarea 
+v-model="reply.text" 
+@blur="debouncedSave" 
+class="flex-1 text-[13px] tracking-wider bg-transparent border-b border-transparent group-hover:border-border/30 focus:border-text/50 resize-none min-h-[30px] transition-colors py-1 outline-none text-text"
+:class="{'line-through text-gray': !reply.enabled}">
+</textarea>
 									<button @click="reply.enabled = !reply.enabled; debouncedSave()" class="text-[10px] text-gray hover:text-text px-2 py-1 shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity bg-bg shadow-sm rounded-sm">{{ reply.enabled ? '结印' : '启封' }}</button>
 								</div>
 							</div>
@@ -908,8 +936,17 @@ body { ... }" class="w-full bg-border/5 p-4 text-[12px] border-b border-border/3
 		        const libSearch = ref('');
 		        const batchSelectMode = ref(false);
 		        const selectedLibIds = ref([]);
-		        const filteredReplies = computed(() => { if(!currentGroup.value) return []; const k = libSearch.value.trim(); if(!k) return currentGroup.value.replies; return currentGroup.value.replies.filter(r => r.text.includes(k)); });
-		
+				const filteredReplies = computed(() => { 
+    const k = libSearch.value.trim(); 
+    if(!k) return currentGroup.value ? currentGroup.value.replies : []; 
+    let results = [];
+    replyGroups.value.forEach(g => {
+        g.replies.forEach(r => {
+            if (r.text.includes(k)) results.push(r);
+        });
+    });
+    return results;
+});		
 		        const modal = reactive({ show: false, type: '', title: '', message: '', input: '', placeholder: '', options: [], profileData: {}, songData: {}, onConfirm: null });
 		
 		        const STORAGE_KEY = 'liubai_v13_data';
@@ -932,7 +969,7 @@ body { ... }" class="w-full bg-border/5 p-4 text-[12px] border-b border-border/3
 		
 		            inputText.value = localStorage.getItem('liubai_v13_draft') || '';
 		            setupSystemTheme(); setupAudio();
-		            setTimeout(() => { appState.introFading = true; setTimeout(() => appState.showIntro = false, 2500); }, 6500);
+		            setTimeout(() => { appState.introFading = true; setTimeout(() => appState.showIntro = false, 2500); }, 7500);
 		        };
 		
 		        const debouncedSave = () => {
@@ -1113,8 +1150,30 @@ watch(currentView, (val, oldVal) => {
 		        const addGroup = () => showModal('prompt', '另辟琅域', { placeholder: '域名...', onConfirm: (n) => { if(n) { const id = genId(); replyGroups.value.push({ id, name: n, replies: [] }); currentGroupId.value = id; debouncedSave(); } } });
 		        const deleteGroup = (id) => showModal('confirm', '焚毁此域', { onConfirm: () => { replyGroups.value = replyGroups.value.filter(g => g.id !== id); currentGroupId.value = replyGroups.value[0]?.id; debouncedSave(); } });
 		        const addReplyToCurrent = () => { if(currentGroup.value) { currentGroup.value.replies.unshift({ id: genId(), text: '', enabled: true }); debouncedSave(); } };
-		        const batchAddReplies = () => showModal('batchAdd', '落珠如雨', { onConfirm: (val) => { if(!val) return; const lines = val.split('\n').map(l=>l.trim()).filter(Boolean); lines.forEach(text => currentGroup.value.replies.push({ id: genId(), text, enabled: true })); debouncedSave(); }});
-		        const batchAction = (action) => {
+				const batchAddReplies = () => showModal('batchAdd', '落珠如雨', { 
+    onConfirm: (val) => { 
+        if(!val) return; 
+        const lines = val.split('\n').map(l=>l.trim()).filter(Boolean); 
+        let targetGroup = currentGroup.value; 
+        
+        lines.forEach(text => {
+            const match = text.match(/^【(.+)】$/);
+            if (match) {
+                const groupName = match[1];
+                let existingGroup = replyGroups.value.find(g => g.name === groupName);
+                if (!existingGroup) {
+                    existingGroup = { id: genId(), name: groupName, replies: [] };
+                    replyGroups.value.push(existingGroup);
+                }
+                targetGroup = existingGroup; 
+            } else {
+                if (targetGroup) targetGroup.replies.push({ id: genId(), text, enabled: true });
+            }
+        });
+        debouncedSave(); 
+        showToast("归卷完成");
+    }
+});		        const batchAction = (action) => {
 		            if(selectedLibIds.value.length === 0 || !currentGroup.value) return;
 		            if(action === 'delete') { currentGroup.value.replies = currentGroup.value.replies.filter(r => !selectedLibIds.value.includes(r.id)); selectedLibIds.value = []; batchSelectMode.value = false; debouncedSave(); }
 		            else if (action === 'toggle') { currentGroup.value.replies.forEach(r => { if(selectedLibIds.value.includes(r.id)) r.enabled = !r.enabled; }); selectedLibIds.value = []; batchSelectMode.value = false; debouncedSave(); }
@@ -1125,20 +1184,47 @@ watch(currentView, (val, oldVal) => {
 		        watch(currentGroupId, () => { batchSelectMode.value = false; selectedLibIds.value=[]; libSearch.value=''; nextTick(initSortable); });
 		        const initSortable = () => { if(sortableInst) sortableInst.destroy(); const el = document.querySelector('.reply-sortable-list'); if(!el) return; sortableInst = new Sortable(el, { animation: 200, handle: '.drag-handle', fallbackOnBody: true, onEnd: (evt) => { if(!currentGroup.value) return; const item = currentGroup.value.replies.splice(evt.oldIndex, 1)[0]; currentGroup.value.replies.splice(evt.newIndex, 0, item); debouncedSave(); } }); };
 		
-		        const handleExport = () => {
-		            showModal('select', '何以印刻？', {
-		                options: [{label:'全息融贯', value:'all'}, {label:'经书秘典', value:'lib'}],
-		                onConfirm: (val) => {
-		                    if(!val) return;
-		                    let expData = {};
-		                    if(val === 'all') expData = { messages: messages.value, profiles, settings, replyGroups: replyGroups.value, chatState: { isGroupMode: chatState.isGroupMode, groupMembers: chatState.groupMembers }, playlist: playlist.value };
-		                    else expData = { replyGroups: replyGroups.value };
-		                    const blob = new Blob([JSON.stringify(expData, null, 4)], {type: "application/json"});
-		                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-		                    a.download = `天地卷宗_${val==='all'?'全象':'界脉'}_${Date.now()}.json`; a.click();
-		                }
-		            });
-		        };
+				const handleExport = () => {
+    showModal('select', '何以印刻？', {
+        options: [
+            {label:'全息融贯', value:'all'}, 
+            {label:'经书秘典', value:'lib'},
+            {label:'明文卷宗', value:'txt'}
+        ],
+        onConfirm: (val) => {
+            if(!val) return;
+            
+            if (val === 'txt') {
+                let txtContent = "";
+                replyGroups.value.forEach(group => {
+                    txtContent += `【${group.name}】\n`;
+                    group.replies.forEach(reply => {
+                        if (reply.text.trim()) {
+                            txtContent += `${reply.text}\n`;
+                        }
+                    });
+                    txtContent += `\n`;
+                });
+                
+                const blob = new Blob([txtContent], {type: "text/plain;charset=utf-8"});
+                const a = document.createElement('a'); 
+                a.href = URL.createObjectURL(blob);
+                a.download = `天地卷宗_明文_${Date.now()}.txt`; 
+                a.click();
+                return; 
+            }
+            let expData = {};
+            if(val === 'all') {
+                expData = { messages: messages.value, profiles, settings, replyGroups: replyGroups.value, chatState: { isGroupMode: chatState.isGroupMode, groupMembers: chatState.groupMembers }, playlist: playlist.value };
+            } else {
+                expData = { replyGroups: replyGroups.value };
+            }
+            const blob = new Blob([JSON.stringify(expData, null, 4)], {type: "application/json"});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = `天地卷宗_${val==='all'?'全象':'界脉'}_${Date.now()}.json`; a.click();
+        }
+    });
+};
 		
 		        const handleImport = (e) => {
 		            const file = e.target.files[0]; if(!file) return;
