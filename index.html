@@ -244,10 +244,8 @@
     }
 
     @media (max-width: 768px) {
-
       .ethereal-dust:nth-child(even),
-      .falling-snow:nth-child(even),
-      .nova-dust:nth-child(even) {
+      .falling-snow:nth-child(even) {
         display: none !important;
       }
     }
@@ -869,6 +867,16 @@
       .home-icon-wrap svg {
         width: 24px;
         height: 24px;
+      }
+
+      .poetry-slip-board {
+        gap: 12px;
+        padding: 15px 5px 25px;
+      }
+      .poetry-slip {
+        min-height: 120px;
+        padding: 16px 8px 12px;
+        font-size: 12px;
       }
 
       .mt-24 {
@@ -1645,6 +1653,15 @@
       box-shadow: 0 0 15px rgba(var(--color-text), 0.2);
       z-index: 10;
     }
+    .tab-fade-enter-active,
+    .tab-fade-leave-active {
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .tab-fade-enter-from,
+    .tab-fade-leave-to {
+      opacity: 0;
+      transform: translateY(10px);
+    }
   </style>
   <style id="custom-font-injection"></style>
   <style id="dynamic-bubble-style"></style>
@@ -1682,7 +1699,7 @@
 
         <div class="relative z-10 flex flex-col items-center justify-center mt-[-6vh] cinema-container w-full">
 
-          <div class="relative w-[80vw] max-w-[380px] aspect-square flex items-center justify-center nova-svg-wrap drop-shadow-xl z-10 mb-2">
+          <div class="relative w-[95vw] max-w-[380px] aspect-square flex items-center justify-center nova-svg-wrap drop-shadow-2xl z-10 mb-2">
 
             <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
               <div class="w-[85%] h-[85%] border border-[var(--nova-stroke-primary)] rounded-full border-dashed" style="animation: arraySpin 40s linear infinite;"></div>
@@ -2038,8 +2055,8 @@
               </div>
             </div>
           </main>
-          <footer class="shrink-0 relative z-20 pt-4 pb-[max(16px,env(safe-area-inset-bottom))] px-4" :class="settings.chatBgImg ? '' : 'bg-bg'">
-            <div class="flex items-end gap-3 pb-2 max-w-lg mx-auto relative">
+          <footer class="shrink-0 relative z-20 pt-2 pb-[env(safe-area-inset-bottom)] px-4 sm:pb-4" :class="settings.chatBgImg ? '' : 'bg-bg'">
+            <div class="flex items-end gap-3 pb-1 max-w-lg mx-auto relative">
               <button @click="forceReply" :disabled="isTyping" class="p-2 text-gray hover:text-text shrink-0 disabled:opacity-30 transition-colors cursor-pointer" title="风祈" :style="settings.chatBgImg?'filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5)); color:#fff;':''">
                 <i data-lucide="wind" class="w-5 h-5 stroke-[1.2]"></i>
               </button>
@@ -2119,7 +2136,7 @@
               <span class="insight-tab" :class="{active: insightTab === 'stats'}" @click="insightTab = 'stats'">星轨万象</span>
             </div>
 
-            <transition name="fade" mode="out-in">
+            <transition name="tab-fade" mode="out-in">
               <div v-if="insightTab === 'calendar'" class="flex flex-col gap-6 w-full">
 
                 <div class="jade-panel p-5">
@@ -2216,7 +2233,7 @@
             <div class="poetry-slip-board">
               <div v-if="mixedTopMessages.length === 0" class="text-[12px] text-gray/40 tracking-widest font-light my-10">大音希声，无迹可寻</div>
 
-              <div v-for="(msg, i) in mixedTopMessages" :key="i" class="poetry-slip" :class="msg.type === 'me' ? 'me-slip' : 'them-slip'" :style="`margin-top: ${i % 2 === 0 ? 0 : 35}px;`">
+              <div v-for="(msg, i) in mixedTopMessages" :key="i" class="poetry-slip" :class="msg.type === 'me' ? 'me-slip' : 'them-slip'" :style="`margin-top: ${i % 2 === 0 ? 0 : 20}px;`">
                 <div class="poetry-slip-line"></div>
                 <div class="poetry-slip-dot"></div>
                 <div class="poetry-slip-text">{{ msg.text }}</div>
@@ -2415,10 +2432,12 @@
           for (let i = 0; i < (firstDay === 0 ? 6 : firstDay - 1); i++) grid.push(null);
           for (let i = 1; i <= daysInMonth; i++) {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+            const log = insightLogs.value[dateStr];
+            const hasRealData = log && ((log.me && (log.me.mood || log.me.oracle)) || (log.them && (log.them.mood || log.them.oracle)));
             grid.push({
               day: i,
               dateStr,
-              hasData: !!insightLogs.value[dateStr]
+              hasData: !!hasRealData
             });
           }
           return grid;
@@ -2434,14 +2453,9 @@
           const now = new Date();
           const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-          if (!insightLogs.value[dateStr]) {
-            insightLogs.value[dateStr] = {
-              me: null,
-              them: null
-            };
-          }
+          let data = insightLogs.value[dateStr] || { me: null, them: null };
 
-          if (dateStr === todayStr && !insightLogs.value[dateStr].them) {
+          if (dateStr === todayStr && !data.them) {
             const randType = Math.random();
             let mood = '';
             let oracles = [];
@@ -2455,16 +2469,16 @@
               oracles = generateAncientOracle();
             }
 
+            if (!insightLogs.value[dateStr]) insightLogs.value[dateStr] = {};
             insightLogs.value[dateStr].them = {
               mood: mood,
               oracle: oracles
             };
+            data = insightLogs.value[dateStr];
             debouncedSave();
           }
 
-          const data = insightLogs.value[dateStr];
           calState.myInputMood = data.me ? data.me.mood : '';
-
           calState.myInputOracle = data.me && Array.isArray(data.me.oracle) ? data.me.oracle.join('\n') : '';
 
           calState.themInputMood = data.them && data.them.mood ? data.them.mood : '';
