@@ -869,16 +869,6 @@
         height: 24px;
       }
 
-      .poetry-slip-board {
-        gap: 12px;
-        padding: 15px 5px 25px;
-      }
-      .poetry-slip {
-        min-height: 120px;
-        padding: 16px 8px 12px;
-        font-size: 12px;
-      }
-
       .mt-24 {
         margin-top: 50px !important;
       }
@@ -1402,18 +1392,24 @@
       position: relative;
       width: 100%;
       min-height: 250px;
-      padding: 30px 10px 40px;
+      padding: 30px 20px 40px;
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      justify-content: flex-start;
       align-items: flex-start;
       gap: 20px;
+      -ms-overflow-style: none; 
+      scrollbar-width: none;
+    }
+    .poetry-slip-board::-webkit-scrollbar {
+      display: none;
     }
 
     .poetry-slip {
       writing-mode: vertical-rl;
       text-orientation: upright;
-      padding: 24px 10px 16px;
+      padding: 24px 10px 42px; /* 底部留足空间，让铭牌悬垂 */
       position: relative;
       background: var(--color-bg);
       border: 1px solid rgba(var(--color-text-rgb), 0.15);
@@ -1422,14 +1418,15 @@
       display: flex;
       align-items: center;
       cursor: default;
-      min-height: 160px;
-      max-height: 220px;
+      min-height: 180px;
+      max-height: 240px;
     }
 
     .dark .poetry-slip {
       box-shadow: 4px 6px 15px rgba(0, 0, 0, 0.3);
     }
 
+    /* 竹简悬浮时，整体抬起 */
     .poetry-slip:hover {
       transform: translateY(-8px);
       box-shadow: 8px 12px 25px rgba(0, 0, 0, 0.08);
@@ -1440,6 +1437,7 @@
       box-shadow: 8px 12px 25px rgba(0, 0, 0, 0.6);
     }
 
+    /* 顶部悬挂线 */
     .poetry-slip-line {
       position: absolute;
       top: -30px;
@@ -1450,6 +1448,7 @@
       background: linear-gradient(to bottom, transparent, rgba(var(--color-text-rgb), 0.3));
     }
 
+    /* 顶部固定点 */
     .poetry-slip-dot {
       position: absolute;
       top: 6px;
@@ -1462,25 +1461,91 @@
       opacity: 0.4;
     }
 
+    /* “我”的竹简（深色） */
     .poetry-slip.me-slip {
       background: var(--color-text);
       color: var(--color-bg);
       border-color: transparent;
     }
-
     .poetry-slip.me-slip .poetry-slip-dot {
       background: var(--color-bg);
       opacity: 0.7;
     }
 
-    .poetry-slip.me-slip .poetry-slip-count {
-      color: var(--color-bg);
-      opacity: 0.6;
-    }
-
+    /* “对方”的竹简（浅色） */
     .poetry-slip.them-slip {
       background: transparent;
       color: var(--color-text);
+    }
+
+    /* ------------------------------------------------ */
+    /* 核心改造：极其精致的【悬浮垂坠铭牌】 */
+    /* ------------------------------------------------ */
+    .poetry-slip-count {
+      position: absolute;
+      bottom: -14px; /* 故意打破边界，悬垂于竹简底部之外 */
+      left: 50%;
+      transform: translateX(-50%);
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px;
+      font-weight: 400; /* 细字重，更显清瘦秀丽 */
+      letter-spacing: 0.2em;
+      padding: 10px 5px;
+      border-radius: 2px;
+      z-index: 10;
+      transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 铭牌内部的极细装饰线（增加玉牌雕刻般的精细质感） */
+    .poetry-slip-count::after {
+      content: '';
+      position: absolute;
+      inset: 2px;
+      border: 0.5px solid currentColor;
+      opacity: 0.15;
+      border-radius: 1px;
+      pointer-events: none;
+    }
+
+    /* 对方的铭牌：如莹润白玉 */
+    .poetry-slip.them-slip .poetry-slip-count {
+      background: var(--color-bg);
+      color: var(--color-text);
+      border: 1px solid rgba(var(--color-text-rgb), 0.15);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06), inset 0 0 4px rgba(255, 255, 255, 0.5);
+    }
+    .dark .poetry-slip.them-slip .poetry-slip-count {
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    }
+
+    /* 我的铭牌：如深邃玄铁 */
+    .poetry-slip.me-slip .poetry-slip-count {
+      background: var(--color-text);
+      color: var(--color-bg);
+      border: 1px solid rgba(var(--color-bg), 0.15);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), inset 0 0 4px rgba(0, 0, 0, 0.5);
+    }
+    .dark .poetry-slip.me-slip .poetry-slip-count {
+      background: #1a1a1a;
+      color: #eaeaea;
+      border-color: #333;
+    }
+
+    /* 悬浮互动：竹简抬起时，底部的铭牌会因“重力”微微下落，绳索拉长 */
+    .poetry-slip:hover .poetry-slip-count {
+      transform: translateX(-50%) translateY(3px);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+    }
+    .poetry-slip.me-slip:hover .poetry-slip-count {
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+    }
+    .poetry-slip:hover .poetry-slip-count::before {
+      height: 15px; /* 绳索被物理拉长 */
     }
 
     .poetry-slip-text {
@@ -1488,18 +1553,6 @@
       font-size: 13px;
       letter-spacing: 0.3em;
       margin-top: 10px;
-    }
-
-    .poetry-slip-count {
-      margin-top: 20px;
-      writing-mode: horizontal-tb;
-      font-family: sans-serif;
-      font-size: 10px;
-      color: var(--color-gray);
-      opacity: 0.5;
-      letter-spacing: 0.1em;
-      border-top: 1px dashed currentColor;
-      padding-top: 8px;
     }
 
     .jade-panel {
@@ -1662,6 +1715,12 @@
       opacity: 0;
       transform: translateY(10px);
     }
+    .title-intro {
+      font-family: 'STKaiti', 'KaiTi', '楷体', 'Noto Serif SC', serif !important;
+    }
+    .title-home {
+      font-family: 'STSong', 'SimSun', '宋体', 'Noto Serif SC', serif !important;
+    }
   </style>
   <style id="custom-font-injection"></style>
   <style id="dynamic-bubble-style"></style>
@@ -1762,7 +1821,7 @@
                 <span class="text-[13px] text-[var(--nova-stroke-primary)] tracking-[0.6em] writing-vertical font-ancient relative drop-shadow-md">万象归流</span>
               </div>
 
-              <h1 class="cinema-title font-serif font-light text-[72px] tracking-[0.3em] ml-[0.3em] leading-none z-10 drop-shadow-xl">无界</h1>
+              <h1 class="cinema-title title-intro font-light text-[72px] tracking-[0.3em] ml-[0.3em] leading-none z-10 drop-shadow-xl">无界</h1>
               <div class="absolute right-[5%] top-[23%] w-[48px] h-[48px] flex items-center justify-center pointer-events-none opacity-0 z-20" style="animation: xuanjiReveal 2.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 2.6s;">
                 <div class="absolute w-[2px] h-[2px] bg-[var(--nova-stroke-primary)] rounded-full shadow-[0_0_6px_var(--nova-stroke-primary)]"></div>
 
@@ -1950,7 +2009,7 @@
           </div>
 
           <div class="flex flex-col items-center justify-center mb-[6vh] relative z-10 w-full" style="animation: floatUpHome 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;">
-            <h1 class="text-[52px] font-serif tracking-[0.4em] ml-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-text to-text/40 font-light filter drop-shadow-sm dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">无界</h1>
+            <h1 class="text-[52px] title-home tracking-[0.4em] ml-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-text to-text/40 font-light filter drop-shadow-sm dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">无界</h1>
 
             <div class="flex items-center gap-4 mt-8 mb-4 opacity-70">
               <div class="w-16 h-[1px] bg-gradient-to-r from-transparent via-text/50 to-transparent"></div>
@@ -2055,7 +2114,7 @@
               </div>
             </div>
           </main>
-          <footer class="shrink-0 relative z-20 pt-2 pb-[env(safe-area-inset-bottom)] px-4 sm:pb-4" :class="settings.chatBgImg ? '' : 'bg-bg'">
+          <footer class="shrink-0 relative z-20 pt-3 px-4 w-full" style="padding-bottom: calc(16px + env(safe-area-inset-bottom));" :class="settings.chatBgImg ? 'bg-gradient-to-t from-black/30 dark:from-black/60 to-transparent' : 'bg-bg'">
             <div class="flex items-end gap-3 pb-1 max-w-lg mx-auto relative">
               <button @click="forceReply" :disabled="isTyping" class="p-2 text-gray hover:text-text shrink-0 disabled:opacity-30 transition-colors cursor-pointer" title="风祈" :style="settings.chatBgImg?'filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5)); color:#fff;':''">
                 <i data-lucide="wind" class="w-5 h-5 stroke-[1.2]"></i>
@@ -2237,7 +2296,7 @@
                 <div class="poetry-slip-line"></div>
                 <div class="poetry-slip-dot"></div>
                 <div class="poetry-slip-text">{{ msg.text }}</div>
-                <div class="poetry-slip-count">{{ msg.count }}回</div>
+                <div class="poetry-slip-count">{{ msg.count }}</div>
               </div>
             </div>
           </div>
